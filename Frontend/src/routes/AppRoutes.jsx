@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { useAuth } from "../contexts/useAuth.jsx";
@@ -18,6 +19,8 @@ import {
   mockChannels,
   mockNotifications,
 } from "../features/dashboard/mockData.js";
+
+const BoardsPage = lazy(() => import("../features/boards/BoardsPage.jsx"));
 
 function ProtectedRoute({ children }) {
   const { authenticated, loading } = useAuth();
@@ -68,6 +71,22 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/boards"
+        element={
+          <ProtectedRoute>
+            <Suspense
+              fallback={
+                <Box minH="40vh" display="grid" placeItems="center" role="status">
+                  <Spinner color="accent" />
+                </Box>
+              }
+            >
+              <BoardsPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />

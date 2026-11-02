@@ -521,6 +521,50 @@
   .activity-heatmap__cell[data-level="4"] {
     background: var(--accent-hot);
   }
+
+  .board-column {
+    flex-shrink: 0;
+  }
+
+  .board-column--dragging {
+    z-index: 1;
+    opacity: 0.72;
+    border-color: var(--accent-border);
+  }
+
+  .board-column__dropzone {
+    transition:
+      background-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .board-column__dropzone--over {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+  }
+
+  .board-issue-card {
+    padding: 12px;
+    border-radius: var(--ui-radius-control);
+    cursor: grab;
+    touch-action: none;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      opacity 150ms ease;
+  }
+
+  .board-issue-card:hover {
+    border-color: var(--accent-border);
+  }
+
+  .board-issue-card--dragging {
+    z-index: 2;
+    border-color: var(--accent);
+    box-shadow: var(--shadow-accent);
+    opacity: 0.55;
+    cursor: grabbing;
+  }
 }
 
 input.auth-input {
