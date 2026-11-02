@@ -1,22 +1,18 @@
 import { useState } from "react";
 import {
   Box,
-  useBreakpointValue,
   Drawer,
-  DrawerOverlay,
-  DrawerContent,
   DrawerCloseButton,
+  DrawerContent,
+  DrawerOverlay,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import Sidebar from "../components/navigation/Sidebar.jsx";
 import Topbar from "../components/navigation/Topbar.jsx";
 import ContextPanel from "../components/navigation/ContextPanel.jsx";
 
 /**
- * Main application shell.
- *
- * Desktop: persistent sidebar + main content + collapsible right context panel.
- * Tablet: collapsible sidebar, context panel as a drawer.
- * Mobile: sidebar as a drawer, full-screen content.
+ * Responsive application frame with navigation, workspace content, and context.
  *
  * @param {{ children: import('react').ReactNode, className?: string, [key: string]: any }} props
  */
@@ -24,86 +20,121 @@ export function MainLayout({ children, className = "", ...props }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [contextOpen, setContextOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contextDrawerOpen, setContextDrawerOpen] = useState(false);
 
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const isMobile = useBreakpointValue({ base: true, md: false }) ?? true;
+  const isCompact = useBreakpointValue({ base: true, xl: false }) ?? true;
+  const collapsed = sidebarCollapsed || isCompact;
 
-  const sidebarWidth = sidebarCollapsed ? "64px" : "240px";
-  const contextWidth = "320px";
+  const toggleContext = () => {
+    if (isCompact) {
+      setContextDrawerOpen(true);
+      return;
+    }
+    setContextOpen((open) => !open);
+  };
 
   return (
     <Box
-      className={`flex flex-col h-screen overflow-hidden ${className}`}
+      className={`app-shell ${className}`}
+      display="flex"
+      w="full"
+      h="100dvh"
+      minH="0"
+      overflow="hidden"
       {...props}
     >
-      <Topbar onMenu={() => setMobileMenuOpen(true)} />
-
-      <Box className="flex flex-1 overflow-hidden">
-        {/* Desktop sidebar */}
-        {!isMobile && !isTablet && (
-          <Box w={sidebarWidth} flexShrink={0}>
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              onCollapse={() => setSidebarCollapsed((c) => !c)}
-            />
-          </Box>
-        )}
-
-        {/* Tablet collapsible sidebar */}
-        {isTablet && (
-          <Box w={sidebarCollapsed ? "64px" : sidebarWidth} flexShrink={0}>
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              onCollapse={() => setSidebarCollapsed((c) => !c)}
-            />
-          </Box>
-        )}
-
-        {/* Mobile sidebar drawer */}
-        {isMobile && (
-          <Drawer
-            isOpen={mobileMenuOpen}
-            onClose={() => setMobileMenuOpen(false)}
-            placement="left"
-            size="xs"
-          >
-            <DrawerOverlay />
-            <DrawerContent>
-              <DrawerCloseButton />
-              <Sidebar collapsed={false} />
-            </DrawerContent>
-          </Drawer>
-        )}
-
-        {/* Main content */}
+      {!isMobile && (
         <Box
-          flex={1}
-          overflowY="auto"
-          p={4}
-          ml={
-            isMobile || isTablet ? 0 : sidebarCollapsed ? "64px" : sidebarWidth
-          }
-          mr={contextOpen && !isMobile ? contextWidth : 0}
-          transition="margin 0.2s"
+          as="aside"
+          className="app-sidebar border-r"
+          w={collapsed ? "68px" : "228px"}
+          h="100%"
+          flexShrink={0}
+          overflow="hidden"
+          transition="width 180ms ease"
         >
-          {children}
+          <Sidebar
+            collapsed={collapsed}
+            onCollapse={
+              isCompact ? undefined : () => setSidebarCollapsed((value) => !value)
+            }
+          />
         </Box>
+      )}
 
-        {/* Context panel — desktop/tablet */}
-        {contextOpen && !isMobile && (
+      <Box
+        display="flex"
+        flex={1}
+        flexDirection="column"
+        minW="0"
+        minH="0"
+        overflow="hidden"
+      >
+        <Topbar
+          onMenu={() => setMobileMenuOpen(true)}
+          onToggleContext={toggleContext}
+        />
+
+        <Box display="flex" flex={1} minW="0" minH="0" overflow="hidden">
           <Box
-            className="glass-surface"
-            w={contextWidth}
-            flexShrink={0}
-            borderLeftWidth="1px"
-            borderColor="blackAlpha.200"
-            _dark={{ borderColor: "whiteAlpha.100" }}
+            as="main"
+            className="app-content app-scrollbar"
+            flex={1}
+            minW="0"
             overflowY="auto"
+            px={{ base: 4, md: 6, xl: 7 }}
+            py={{ base: 5, md: 7 }}
           >
-            <ContextPanel onClose={() => setContextOpen(false)} />
+            {children}
           </Box>
-        )}
+
+          {!isCompact && contextOpen && (
+            <Box
+              as="aside"
+              className="app-sidebar border-l"
+              w="286px"
+              flexShrink={0}
+              overflowY="auto"
+            >
+              <ContextPanel onClose={() => setContextOpen(false)} />
+            </Box>
+          )}
+        </Box>
       </Box>
+
+      {isMobile && (
+        <Drawer
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          placement="left"
+          size="xs"
+        >
+          <DrawerOverlay />
+          <DrawerContent className="app-sidebar">
+            <DrawerCloseButton />
+            <Sidebar
+              collapsed={false}
+              onNavigate={() => setMobileMenuOpen(false)}
+            />
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      {isCompact && (
+        <Drawer
+          isOpen={contextDrawerOpen}
+          onClose={() => setContextDrawerOpen(false)}
+          placement="right"
+          size="xs"
+        >
+          <DrawerOverlay />
+          <DrawerContent className="app-sidebar">
+            <DrawerCloseButton />
+            <ContextPanel onClose={() => setContextDrawerOpen(false)} />
+          </DrawerContent>
+        </Drawer>
+      )}
     </Box>
   );
 }

@@ -1,24 +1,13 @@
-import { Button } from "@chakra-ui/react";
+import { Button } from "./Button.jsx";
 
 /**
- * Primary Amethyst button.
- * Extends Chakra Button with the Amethyst palette defaults.
+ * Backwards-compatible primary button backed by the shared Button primitive.
  *
- * @param {object} props
- * @param {import('react').ReactNode} props.children
+ * @param {{ children: import('react').ReactNode, [key: string]: any }} props
  */
-export function PrimaryButton({ children, ...props }) {
+export function PrimaryButton({ children, variant = "primary", ...props }) {
   return (
-    <Button
-      bg="amethyst.600"
-      color="white"
-      _hover={{ bg: "amethyst.700" }}
-      _active={{ bg: "amethyst.800" }}
-      _disabled={{ bg: "amethyst.300", cursor: "not-allowed" }}
-      borderRadius="10px"
-      fontWeight="600"
-      {...props}
-    >
+    <Button variant={variant} {...props}>
       {children}
     </Button>
   );

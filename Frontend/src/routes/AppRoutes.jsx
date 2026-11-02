@@ -1,4 +1,5 @@
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { useAuth } from "../contexts/useAuth.jsx";
 import MainLayout from "../layouts/MainLayout.jsx";
 import DashboardPage from "../features/dashboard/DashboardPage.jsx";
@@ -15,8 +16,32 @@ import {
 
 function ProtectedRoute({ children }) {
   const { authenticated, loading } = useAuth();
-  if (loading) return <div className="p-8 text-center">Loading…</div>;
-  if (!authenticated) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (loading) {
+    return (
+      <Box
+        className="app-shell"
+        minH="100dvh"
+        display="grid"
+        placeItems="center"
+        role="status"
+      >
+        <VStack spacing={3}>
+          <Spinner color="amethyst.500" thickness="2px" />
+          <Text
+            fontSize="sm"
+            color="gray.500"
+            _dark={{ color: "whiteAlpha.600" }}
+          >
+            Loading your workspace
+          </Text>
+        </VStack>
+      </Box>
+    );
+  }
+  if (!authenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
   return <MainLayout>{children}</MainLayout>;
 }
 

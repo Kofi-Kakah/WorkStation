@@ -1,165 +1,198 @@
 import {
   Box,
+  Button,
   HStack,
-  Icon,
+  IconButton,
   Text,
   Tooltip,
-  useColorMode,
 } from "@chakra-ui/react";
-import { Moon, Sun, Bell, Search, HelpCircle, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import {
+  Bell,
+  ChevronRight,
+  Command,
+  Menu,
+  PanelRight,
+  Search,
+} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth.jsx";
 import Avatar from "../shared/Avatar.jsx";
 
-/**
- * Top navigation bar.
- *
- * @param {{ className?: string, onMenu?: () => void, [key: string]: any }} props
- */
-export function Topbar({ className = "", onMenu, ...props }) {
-  const { colorMode, toggleColorMode } = useColorMode();
-  const navigate = useNavigate();
-  const { profile } = useAuth();
+const PAGE_TITLES = [
+  ["/dashboard", "Overview"],
+  ["/health", "System health"],
+  ["/inbox", "Inbox"],
+  ["/channels", "Channels"],
+  ["/dm", "Direct messages"],
+  ["/projects", "Projects"],
+  ["/boards", "Boards"],
+  ["/issues", "Issues"],
+  ["/notifications", "Notifications"],
+  ["/settings", "Settings"],
+];
 
-  const displayName = profile?.displayName || "User";
+/**
+ * Compact workspace toolbar with route context and global controls.
+ *
+ * @param {{ className?: string, onMenu?: () => void, onToggleContext?: () => void }} props
+ */
+export function Topbar({ className = "", onMenu, onToggleContext }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { profile } = useAuth();
+  const displayName = profile?.displayName || "Account";
+  const pageTitle =
+    (location.pathname === "/"
+      ? "Overview"
+      : PAGE_TITLES.find(([path]) => location.pathname.startsWith(path))?.[1]) ||
+    "Workspace";
 
   return (
     <Box
-      className={`glass-surface flex items-center justify-between px-4 py-2 ${className}`}
-      h="64px"
+      as="header"
+      className={`app-topbar border-b ${className}`}
+      display="flex"
+      alignItems="center"
+      justifyContent="space-between"
+      gap={4}
+      h="58px"
+      px={{ base: 3, md: 5, xl: 6 }}
       flexShrink={0}
-      {...props}
     >
-      <HStack gap={3}>
-        {/* Mobile menu button */}
-        <Box display={{ base: "flex", md: "none" }} alignItems="center">
-          <Box
-            p={2}
-            borderRadius="8px"
-            cursor="pointer"
-            _hover={{ bg: "blackAlpha.50" }}
-            onClick={onMenu}
+      <HStack minW="0" spacing={2.5}>
+        <IconButton
+          aria-label="Open workspace navigation"
+          icon={<Menu size={18} />}
+          variant="ghost"
+          display={{ base: "inline-flex", md: "none" }}
+          onClick={onMenu}
+        />
+        <Box display="flex" alignItems="center" gap={2} minW="0">
+          <Text
+            display={{ base: "none", sm: "block" }}
+            fontSize="xs"
+            color="gray.500"
+            _dark={{ color: "whiteAlpha.500" }}
+            noOfLines={1}
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </Box>
+            Workspace
+          </Text>
+          <ChevronRight
+            size={13}
+            className="hidden shrink-0 text-gray-400 sm:block"
+            aria-hidden="true"
+          />
+          <Text
+            fontSize="sm"
+            fontWeight="600"
+            color="gray.800"
+            _dark={{ color: "whiteAlpha.900" }}
+            noOfLines={1}
+          >
+            {pageTitle}
+          </Text>
         </Box>
-
-        {/* Breadcrumb / page title slot */}
-        <Text fontSize="lg" fontWeight="700">
-          Dashboard
-        </Text>
       </HStack>
 
-      <HStack gap={2}>
-        <Tooltip label="Search (⌘K)" placement="bottom">
-          <Box
-            display={{ base: "none", sm: "flex" }}
-            alignItems="center"
-            gap={2}
-            px={3}
-            py={1.5}
-            borderRadius="8px"
-            bg="white"
-            _dark={{ bg: "whiteAlpha.50" }}
-            border="1px solid"
-            borderColor="blackAlpha.200"
-            _dark={{ borderColor: "whiteAlpha.100" }}
-            cursor="pointer"
-            _hover={{ bg: "amethyst.50" }}
-            onClick={() => navigate("/search")}
-          >
-            <Search size={14} />
-            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }}>
-              Search…
-            </Text>
-          </Box>
-        </Tooltip>
-
-        <Tooltip label="Create" placement="bottom">
-          <Box
-            p={2}
-            borderRadius="8px"
-            cursor="pointer"
-            bg="amethyst.100"
-            _hover={{ bg: "amethyst.200" }}
-            color="amethyst.700"
-          >
-            <Plus size={18} />
-          </Box>
-        </Tooltip>
-
-        <Tooltip label="Help" placement="bottom">
-          <Box
-            p={2}
-            borderRadius="8px"
-            cursor="pointer"
-            _hover={{ bg: "blackAlpha.50" }}
-          >
-            <HelpCircle size={18} />
-          </Box>
-        </Tooltip>
-
-        <Tooltip
-          label={colorMode === "dark" ? "Light mode" : "Dark mode"}
-          placement="bottom"
+      <HStack spacing={{ base: 1, md: 2 }} flexShrink={0}>
+        <Button
+          aria-label="Search workspace"
+          variant="outline"
+          size="sm"
+          h="34px"
+          minW={{ base: "34px", sm: "200px", lg: "260px" }}
+          px={{ base: 2, sm: 3 }}
+          justifyContent="flex-start"
+          gap={2}
+          color="gray.500"
+          borderColor="blackAlpha.200"
+          fontWeight="400"
+          _dark={{
+            color: "whiteAlpha.600",
+            borderColor: "whiteAlpha.200",
+            bg: "whiteAlpha.50",
+          }}
+          _hover={{
+            borderColor: "amethyst.400",
+            bg: "amethyst.50",
+            _dark: { bg: "whiteAlpha.100" },
+          }}
+          onClick={() => navigate("/search")}
         >
-          <Box
-            p={2}
-            borderRadius="8px"
-            cursor="pointer"
-            bg="white"
-            _dark={{ bg: "whiteAlpha.50" }}
-            border="1px solid"
-            borderColor="blackAlpha.200"
-            _dark={{ borderColor: "whiteAlpha.100" }}
-            onClick={toggleColorMode}
+          <Search size={14} />
+          <Text display={{ base: "none", sm: "block" }} flex={1} textAlign="left">
+            Search workspace...
+          </Text>
+          <HStack
+            display={{ base: "none", lg: "flex" }}
+            spacing={0.5}
+            color="gray.400"
+            fontSize="10px"
           >
-            <Icon as={colorMode === "dark" ? Sun : Moon} boxSize={4} />
-          </Box>
-        </Tooltip>
+            <Command size={11} />
+            <span>K</span>
+          </HStack>
+        </Button>
 
-        <Tooltip label="Notifications" placement="bottom">
-          <Box
-            p={2}
-            borderRadius="8px"
-            cursor="pointer"
-            _hover={{ bg: "blackAlpha.50" }}
-            position="relative"
-          >
-            <Bell size={18} />
+        <Tooltip label="Notifications">
+          <Box position="relative">
+            <IconButton
+              aria-label="Notifications"
+              icon={<Bell size={16} />}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/notifications")}
+            />
             <Box
+              aria-hidden="true"
+              pointerEvents="none"
               position="absolute"
-              top={1}
-              right={1}
-              w="8px"
-              h="8px"
+              top="7px"
+              right="7px"
+              w="6px"
+              h="6px"
               borderRadius="full"
-              bg="red.400"
+              bg="amethyst.500"
+              border="1px solid"
+              borderColor="white"
+              _dark={{ borderColor: "#101012" }}
             />
           </Box>
         </Tooltip>
 
-        <Tooltip label={displayName} placement="bottom">
-          <Box cursor="pointer" onClick={() => navigate("/profile")}>
-            <Avatar
-              name={displayName}
-              src={undefined}
-              size="md"
-              status="online"
-            />
-          </Box>
+        <Tooltip label="Open workspace context">
+          <IconButton
+            aria-label="Toggle workspace context"
+            icon={<PanelRight size={16} />}
+            variant="ghost"
+            size="sm"
+            display="inline-flex"
+            onClick={onToggleContext}
+          />
         </Tooltip>
+
+        <Box
+          as="button"
+          type="button"
+          aria-label={`Account: ${displayName}`}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          p="2px"
+          borderRadius="full"
+          border="1px solid"
+          borderColor="amethyst.300"
+          _dark={{ borderColor: "amethyst.700" }}
+          cursor="pointer"
+          onClick={() => navigate("/profile")}
+        >
+          <Avatar
+            name={displayName}
+            src={profile?.photoURL}
+            size="sm"
+            status="online"
+          />
+        </Box>
       </HStack>
     </Box>
   );

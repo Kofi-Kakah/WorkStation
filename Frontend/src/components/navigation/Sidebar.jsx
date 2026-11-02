@@ -1,26 +1,28 @@
-import { Box, Text, HStack, Icon, Tooltip } from "@chakra-ui/react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Box, Button, Text, Tooltip } from "@chakra-ui/react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Inbox,
-  MessageSquare,
-  FolderKanban,
-  Kanban,
-  Bug,
   Bell,
-  Settings,
-  User,
-  Hash,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  FolderKanban,
+  Hash,
+  Inbox,
+  Kanban,
+  LayoutDashboard,
+  MessageSquare,
   Plus,
   Search,
+  Settings,
+  Bug,
+  UserRound,
 } from "lucide-react";
 
 const NAV_GROUPS = [
   {
     label: "Workspace",
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
+      { label: "Overview", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Inbox", icon: Inbox, to: "/inbox" },
     ],
   },
@@ -44,204 +46,267 @@ const NAV_GROUPS = [
     items: [
       { label: "Notifications", icon: Bell, to: "/notifications" },
       { label: "Settings", icon: Settings, to: "/settings" },
-      { label: "Profile", icon: User, to: "/profile" },
+      { label: "Profile", icon: UserRound, to: "/profile" },
     ],
   },
 ];
 
 /**
- * Left sidebar navigation.
+ * Workspace navigation for desktop, tablet, and mobile layouts.
  *
- * @param {{ collapsed?: boolean, onCollapse?: () => void, className?: string, [key: string]: any }} props
+ * @param {{ collapsed?: boolean, onCollapse?: () => void, onNavigate?: () => void }} props
  */
 export function Sidebar({
   collapsed = false,
   onCollapse,
-  className = "",
-  ...props
+  onNavigate,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (to) =>
-    location.pathname === to || location.pathname.startsWith(to + "/");
+    (to === "/dashboard" && location.pathname === "/") ||
+    location.pathname === to ||
+    location.pathname.startsWith(`${to}/`);
+
+  const navigateTo = (to) => {
+    navigate(to);
+    onNavigate?.();
+  };
 
   return (
     <Box
-      className={`glass-surface h-full flex flex-col ${className}`}
-      w={collapsed ? "64px" : "240px"}
-      flexShrink={0}
-      borderRightWidth="1px"
-      borderColor="blackAlpha.200"
-      _dark={{ borderColor: "whiteAlpha.100" }}
-      {...props}
+      className="app-sidebar flex h-full flex-col"
+      w="full"
+      minW="0"
+      py={3}
     >
-      {/* Logo + workspace selector */}
-      <Box p={3} display="flex" alignItems="center" gap={2}>
-        <Box
-          w="32px"
-          h="32px"
-          borderRadius="8px"
-          bgGradient="linear(135deg, amethyst.500, amethyst.700)"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          color="white"
-          fontWeight="800"
-        >
-          U
-        </Box>
-        {!collapsed && (
-          <Box flex={1} minWidth={0}>
-            <Text fontSize="sm" fontWeight="700" truncate>
-              Acme Corp
-            </Text>
-            <HStack gap={1} cursor="pointer" _hover={{ color: "amethyst.600" }}>
-              <ChevronDown size={12} />
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent={collapsed ? "center" : "space-between"}
+        px={collapsed ? 2 : 4}
+        pb={5}
+        minH="54px"
+      >
+        <Box display="flex" alignItems="center" gap={3} minW="0">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="32px"
+            h="32px"
+            flexShrink={0}
+            borderRadius="10px"
+            bg="amethyst.600"
+            color="white"
+            fontSize="sm"
+            fontWeight="800"
+          >
+            U
+          </Box>
+          {!collapsed && (
+            <Box minW="0">
+              <Text fontSize="sm" fontWeight="700" lineHeight="1.25">
+                WorkStation
+              </Text>
               <Text
                 fontSize="xs"
                 color="gray.500"
-                _dark={{ color: "gray.400" }}
-                truncate
+                _dark={{ color: "whiteAlpha.500" }}
               >
                 Workspace
               </Text>
-            </HStack>
-          </Box>
+            </Box>
+          )}
+        </Box>
+        {!collapsed && (
+          <Button
+            aria-label="Select workspace"
+            variant="ghost"
+            size="xs"
+            minW="7"
+            px={1}
+            color="gray.500"
+            _dark={{ color: "whiteAlpha.600" }}
+          >
+            <ChevronDown size={15} />
+          </Button>
         )}
       </Box>
 
-      {/* New button */}
+      {!collapsed && (
+        <Box px={3} pb={3}>
+          <Button
+            w="full"
+            h="36px"
+            justifyContent="flex-start"
+            gap={2}
+            variant="outline"
+            borderColor="blackAlpha.200"
+            color="gray.600"
+            fontSize="xs"
+            fontWeight="500"
+            _dark={{
+              borderColor: "whiteAlpha.200",
+              color: "whiteAlpha.700",
+              bg: "whiteAlpha.50",
+            }}
+            _hover={{
+              borderColor: "amethyst.400",
+              color: "amethyst.700",
+              _dark: { color: "amethyst.200" },
+            }}
+          >
+            <Search size={14} />
+            <Text flex={1} textAlign="left">
+              Quick search
+            </Text>
+            <Text fontSize="10px" color="gray.400">
+              Ctrl K
+            </Text>
+          </Button>
+        </Box>
+      )}
+
       {!collapsed && (
         <Box px={3} pb={2}>
-          <Box
-            display="flex"
-            alignItems="center"
+          <Button
+            w="full"
+            h="36px"
+            justifyContent="flex-start"
             gap={2}
-            p={2}
-            borderRadius="8px"
-            cursor="pointer"
-            bg="amethyst.100"
-            _hover={{ bg: "amethyst.200" }}
+            variant="ghost"
             color="amethyst.700"
             fontSize="sm"
             fontWeight="600"
+            _dark={{ color: "amethyst.300" }}
+            _hover={{ bg: "amethyst.100", _dark: { bg: "whiteAlpha.100" } }}
           >
-            <Plus size={16} />
-            <span>New</span>
-          </Box>
+            <Plus size={15} />
+            Create new
+          </Button>
         </Box>
       )}
 
-      {/* Search */}
-      {!collapsed && (
-        <Box px={3} pb={2}>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={2}
-            p={2}
-            borderRadius="8px"
-            bg="white"
-            _dark={{ bg: "whiteAlpha.50" }}
-            border="1px solid"
-            borderColor="blackAlpha.200"
-            _dark={{ borderColor: "whiteAlpha.100" }}
-            cursor="pointer"
-            _hover={{ bg: "amethyst.50" }}
-          >
-            <Search size={14} />
-            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }}>
-              Search…
-            </Text>
-          </Box>
-        </Box>
-      )}
-
-      {/* Navigation */}
-      <Box flex={1} overflowY="auto" py={2}>
+      <Box
+        as="nav"
+        aria-label="Workspace navigation"
+        flex={1}
+        minH="0"
+        overflowY="auto"
+        className="app-scrollbar"
+        px={2}
+        py={2}
+      >
         {NAV_GROUPS.map((group) => (
-          <Box key={group.label} mb={2}>
+          <Box key={group.label} mb={4}>
             {!collapsed && (
               <Text
-                px={3}
-                py={1}
-                fontSize="xs"
+                px={2}
+                pb={1.5}
+                fontSize="10px"
                 fontWeight="700"
-                color="gray.500"
-                _dark={{ color: "gray.400" }}
+                letterSpacing="0.11em"
                 textTransform="uppercase"
-                letterSpacing="wider"
+                color="gray.500"
+                _dark={{ color: "whiteAlpha.500" }}
               >
                 {group.label}
               </Text>
             )}
-            {group.items.map((item) => {
-              const active = isActive(item.to);
-              return (
-                <Tooltip
-                  key={item.label}
-                  label={item.label}
-                  isDisabled={!collapsed}
-                  placement="right"
-                >
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    px={collapsed ? 2 : 3}
-                    py={1.5}
-                    cursor="pointer"
-                    bg={active ? "amethyst.100" : "transparent"}
-                    color={active ? "amethyst.700" : "gray.700"}
-                    _dark={{ color: active ? "amethyst.300" : "gray.200" }}
-                    _hover={{ bg: active ? "amethyst.200" : "blackAlpha.50" }}
-                    _dark={{
-                      _hover: { bg: active ? "amethyst.800" : "whiteAlpha.50" },
-                    }}
-                    onClick={() => navigate(item.to)}
+            <Box display="flex" flexDirection="column" gap={0.5}>
+              {group.items.map((item) => {
+                const active = isActive(item.to);
+                const ItemIcon = item.icon;
+                return (
+                  <Tooltip
+                    key={item.label}
+                    label={item.label}
+                    placement="right"
+                    isDisabled={!collapsed}
                   >
-                    <Icon as={item.icon} boxSize={collapsed ? 5 : 4} />
-                    {!collapsed && (
-                      <Text fontSize="sm" fontWeight={active ? "600" : "500"}>
-                        {item.label}
-                      </Text>
-                    )}
-                  </Box>
-                </Tooltip>
-              );
-            })}
+                    <Button
+                      aria-current={active ? "page" : undefined}
+                      variant="ghost"
+                      size="sm"
+                      w="full"
+                      h="34px"
+                      px={collapsed ? 0 : 2}
+                      justifyContent={collapsed ? "center" : "flex-start"}
+                      gap={2.5}
+                      borderRadius="8px"
+                      color={active ? "amethyst.700" : "gray.600"}
+                      bg={active ? "amethyst.100" : "transparent"}
+                      _dark={{
+                        color: active ? "amethyst.200" : "whiteAlpha.700",
+                        bg: active ? "amethyst.900" : "transparent",
+                      }}
+                      _hover={{
+                        bg: active ? "amethyst.100" : "blackAlpha.50",
+                        color: active ? "amethyst.800" : "gray.900",
+                        _dark: {
+                          bg: active ? "amethyst.900" : "whiteAlpha.100",
+                          color: "white",
+                        },
+                      }}
+                      onClick={() => navigateTo(item.to)}
+                    >
+                      <ItemIcon size={16} aria-hidden="true" />
+                      {!collapsed && (
+                        <Text
+                          flex={1}
+                          textAlign="left"
+                          fontSize="xs"
+                          fontWeight={active ? "600" : "500"}
+                          noOfLines={1}
+                        >
+                          {item.label}
+                        </Text>
+                      )}
+                    </Button>
+                  </Tooltip>
+                );
+              })}
+            </Box>
           </Box>
         ))}
       </Box>
 
-      {/* Collapse toggle */}
-      <Box
-        p={2}
-        borderTopWidth="1px"
-        borderColor="blackAlpha.200"
-        _dark={{ borderColor: "whiteAlpha.100" }}
-      >
+      {onCollapse && (
         <Box
-          display="flex"
-          alignItems="center"
-          gap={2}
-          p={2}
-          cursor="pointer"
-          borderRadius="8px"
-          _hover={{ bg: "blackAlpha.50" }}
-          _dark={{ _hover: { bg: "whiteAlpha.50" } }}
-          onClick={onCollapse}
+          borderTop="1px solid"
+          borderColor="blackAlpha.100"
+          _dark={{ borderColor: "whiteAlpha.100" }}
+          px={2}
+          pt={2}
         >
-          <Icon
-            as={ChevronDown}
-            boxSize={4}
-            transform={collapsed ? "" : "rotate(180deg)"}
-            transition="transform 0.2s"
-          />
-          {!collapsed && <Text fontSize="sm">Collapse</Text>}
+          <Button
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            variant="ghost"
+            size="sm"
+            w="full"
+            h="34px"
+            justifyContent={collapsed ? "center" : "flex-start"}
+            gap={2.5}
+            color="gray.500"
+            _dark={{ color: "whiteAlpha.600" }}
+            _hover={{ bg: "blackAlpha.50", _dark: { bg: "whiteAlpha.100" } }}
+            onClick={onCollapse}
+          >
+            {collapsed ? (
+              <ChevronsRight size={16} />
+            ) : (
+              <ChevronsLeft size={16} />
+            )}
+            {!collapsed && (
+              <Text fontSize="xs" fontWeight="500">
+                Collapse sidebar
+              </Text>
+            )}
+          </Button>
         </Box>
-      </Box>
+      )}
     </Box>
   );
 }

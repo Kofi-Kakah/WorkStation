@@ -1,41 +1,75 @@
 import { extendTheme } from "@chakra-ui/react";
 
 const colors = {
+  base: "var(--bg-base)",
+  sidebar: "var(--bg-sidebar)",
+  surface: "var(--bg-surface)",
+  surfaceRaised: "var(--bg-surface-raised)",
+  borderSubtle: "var(--border-subtle)",
+  textPrimary: "var(--text-primary)",
+  textSecondary: "var(--text-secondary)",
+  textMuted: "var(--text-muted)",
+  accent: "var(--accent)",
+  accentHot: "var(--accent-hot)",
+  accentDeep: "var(--accent-deep)",
+  accentSoft: "var(--accent-soft)",
+  accentBorder: "var(--accent-border)",
+  success: "var(--success)",
+  successSoft: "var(--success-soft)",
+  danger: "var(--danger)",
+  warning: "var(--warning)",
+  info: "var(--info)",
+  ember: {
+    50: "var(--accent-soft)",
+    100: "var(--accent-soft)",
+    200: "var(--accent-border)",
+    300: "var(--accent-hot)",
+    400: "var(--accent-hot)",
+    500: "var(--accent)",
+    600: "var(--accent)",
+    700: "var(--accent-deep)",
+    800: "var(--accent-deep)",
+    900: "var(--accent-deep)",
+  },
   amethyst: {
-    50: "#ffffff",
-    100: "#f7ecff",
-    200: "#efdaff",
-    300: "#e5c7ff",
-    400: "#dbb3ff",
-    500: "#ce97ff",
-    600: "#bd79ff",
-    700: "#9660ce",
-    800: "#694192",
-    900: "#392053",
-    950: "#261437",
+    50: "var(--accent-soft)",
+    100: "var(--accent-soft)",
+    200: "var(--accent-border)",
+    300: "var(--accent-hot)",
+    400: "var(--accent-hot)",
+    500: "var(--accent)",
+    600: "var(--accent)",
+    700: "var(--accent-deep)",
+    800: "var(--accent-deep)",
+    900: "var(--accent-deep)",
   },
   semantic: {
-    success: "#22c55e",
-    warning: "#f59e0b",
-    error: "#ef4444",
-    info: "#3b82f6",
+    success: "var(--success)",
+    warning: "var(--warning)",
+    error: "var(--danger)",
+    info: "var(--info)",
   },
 };
 
 const theme = extendTheme({
   colors,
   fonts: {
-    body: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    body: '"Inter", ui-sans-serif, system-ui, sans-serif',
     heading:
-      'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      '"Inter", ui-sans-serif, system-ui, sans-serif',
     mono: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
   },
   styles: {
-    global: (props) => ({
+    global: () => ({
+      "html, body, #root": {
+        minHeight: "100%",
+        height: "100%",
+      },
       body: {
-        bg: props.colorMode === "dark" ? "#1a1026" : "#f7ecff",
-        color: props.colorMode === "dark" ? "#f5f0ff" : "#1f1a2e",
-        minHeight: "100vh",
+        bg: "var(--bg-base)",
+        color: "var(--text-primary)",
+        minHeight: "100%",
+        overflowX: "hidden",
       },
     }),
   },
@@ -47,23 +81,24 @@ const theme = extendTheme({
       },
       variants: {
         solid: () => ({
-          bg: "amethyst.600",
+          bg: "accent",
           color: "white",
-          _hover: { bg: "amethyst.700" },
-          _active: { bg: "amethyst.800" },
+          _hover: { bg: "accentHot" },
+          _active: { bg: "accentDeep" },
         }),
-        ghost: (props) => ({
-          color: props.colorMode === "dark" ? "amethyst.300" : "amethyst.700",
+        ghost: () => ({
+          color: "textSecondary",
           _hover: {
-            bg: props.colorMode === "dark" ? "whiteAlpha.100" : "amethyst.100",
+            bg: "surfaceRaised",
+            color: "textPrimary",
           },
         }),
       },
     },
   },
   config: {
-    initialColorMode: "system",
-    useSystemColorMode: true,
+    initialColorMode: "dark",
+    useSystemColorMode: false,
   },
 });
 

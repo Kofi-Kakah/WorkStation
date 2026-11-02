@@ -1,9 +1,9 @@
-import { Box } from "@chakra-ui/react";
+import { Card } from "./Card.jsx";
 
 /**
- * Reusable glass-surface card.
+ * Backwards-compatible card name, now rendered as a layered Emberline surface.
  *
- * @param {{ children: import('react').ReactNode, variant?: 'lg'|'sm'|'flat', hover?: boolean, className?: string, [key: string]: any }} props
+ * @param {{ children: import('react').ReactNode, variant?: 'lg'|'sm'|'flat'|'raised'|'featured', hover?: boolean, className?: string, [key: string]: any }} props
  */
 export function GlassCard({
   children,
@@ -12,15 +12,24 @@ export function GlassCard({
   className = "",
   ...props
 }) {
-  const base = variant === "sm" ? "glass-surface-sm" : "glass-surface";
-  const hoverCls = hover
-    ? "transition-all duration-200 hover:shadow-glass-hover hover:-translate-y-0.5"
+  const resolvedVariant =
+    variant === "featured"
+      ? "featured"
+      : variant === "raised"
+        ? "raised"
+        : "default";
+  const hoverClass = hover
+    ? "transition-colors duration-150 hover:border-accent/40"
     : "";
 
   return (
-    <Box className={`${base} ${hoverCls} ${className}`} {...props}>
+    <Card
+      variant={resolvedVariant}
+      className={`p-4 ${hoverClass} ${className}`.trim()}
+      {...props}
+    >
       {children}
-    </Box>
+    </Card>
   );
 }
 
