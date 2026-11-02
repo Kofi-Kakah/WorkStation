@@ -1,0 +1,84 @@
+/**
+ * Global design tokens for the Amethyst design system.
+ *
+ * This file defines the CSS custom properties used by both Tailwind v4
+ * (via @theme) and plain CSS. Chakra UI components consume these through
+ * the Chakra theme object in theme.js.
+ */
+@import "tailwindcss";
+
+@theme {
+  --color-amethyst-50: #ffffff;
+  --color-amethyst-100: #f7ecff;
+  --color-amethyst-200: #efdaff;
+  --color-amethyst-300: #e5c7ff;
+  --color-amethyst-400: #dbb3ff;
+  --color-amethyst-500: #ce97ff;
+  --color-amethyst-600: #bd79ff;
+  --color-amethyst-700: #9660ce;
+  --color-amethyst-800: #694192;
+  --color-amethyst-900: #392053;
+  --color-amethyst-950: #261437;
+
+  --color-glass-bg: rgba(255, 255, 255, 0.58);
+  --color-glass-border: rgba(255, 255, 255, 0.42);
+  --color-glass-highlight: rgba(255, 255, 255, 0.35);
+  --color-glass-shadow: rgba(38, 20, 55, 0.08);
+
+  --color-bg-app: #f7ecff;
+  --color-bg-app-dark: #1a1026;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-dark: #261437;
+
+  --color-text-primary: #1f1a2e;
+  --color-text-primary-dark: #f5f0ff;
+  --color-text-secondary: #5a4f72;
+  --color-text-secondary-dark: #c4b8e0;
+
+  --color-border-default: rgba(38, 20, 55, 0.12);
+  --color-border-default-dark: rgba(245, 240, 255, 0.12);
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+  .glass-surface {
+    background: var(--color-glass-bg);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--color-glass-border);
+    box-shadow:
+      0 8px 32px var(--color-glass-shadow),
+      inset 0 1px 0 var(--color-glass-highlight);
+    border-radius: 18px;
+  }
+
+  .dark .glass-surface {
+    background: rgba(38, 20, 55, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-surface-sm {
+    background: var(--color-glass-bg);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--color-glass-border);
+    border-radius: 12px;
+  }
+
+  .dark .glass-surface-sm {
+    background: rgba(38, 20, 55, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+}
