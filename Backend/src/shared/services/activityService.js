@@ -1,5 +1,5 @@
-import { getFirestore } from '../../config/firebase.js';
-import { generateId, serverTimestamp } from '../utils/index.js';
+import { getFirestore } from "../../config/firebase.js";
+import { generateId, serverTimestamp } from "../utils/index.js";
 
 const fs = getFirestore();
 
@@ -10,7 +10,10 @@ const fs = getFirestore();
  * Each entry: { actorId, actorName, action, resource, timestamp, context }
  */
 export const ActivityService = {
-  async record(workspaceId, { actorId, actorName, action, resource, context = {} }) {
+  async record(
+    workspaceId,
+    { actorId, actorName, action, resource, context = {} },
+  ) {
     if (!workspaceId) return null;
     const id = generateId();
     const ref = fs.collection(`workspaces/${workspaceId}/activities`).doc(id);
@@ -28,11 +31,17 @@ export const ActivityService = {
   },
 
   async list(workspaceId, { limit = 50, offset = 0, resource = null } = {}) {
-    let q = fs.collection(`workspaces/${workspaceId}/activities`)
-      .orderBy('createdAt', 'desc');
-    if (resource) q = q.where('resource.type', '==', resource.type).where('resource.id', '==', resource.id);
+    let q = fs
+      .collection(`workspaces/${workspaceId}/activities`)
+      .orderBy("createdAt", "desc");
+    if (resource)
+      q = q
+        .where("resource.type", "==", resource.type)
+        .where("resource.id", "==", resource.id);
     const snap = await q.limit(limit + 1).get();
-    const items = snap.docs.slice(offset, offset + limit).map((d) => ({ id: d.id, ...d.data() }));
+    const items = snap.docs
+      .slice(offset, offset + limit)
+      .map((d) => ({ id: d.id, ...d.data() }));
     return { items, hasMore: snap.size > limit };
   },
 };

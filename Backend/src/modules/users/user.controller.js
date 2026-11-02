@@ -21,7 +21,11 @@ export default class UserController {
 
   async updateMe(req, res, next) {
     try {
-      const profile = await this.service.updateProfile(req.user.uid, req.body, req.user);
+      const profile = await this.service.updateProfile(
+        req.user.uid,
+        req.body,
+        req.user,
+      );
       return res.json({ ok: true, user: profile });
     } catch (error) {
       next(error);
@@ -40,7 +44,10 @@ export default class UserController {
 
   async requestAvatarUpload(req, res, next) {
     try {
-      const result = await this.service.requestAvatarUpload(req.user.uid, req.body);
+      const result = await this.service.requestAvatarUpload(
+        req.user.uid,
+        req.body,
+      );
       return res.json({ ok: true, ...result });
     } catch (error) {
       next(error);

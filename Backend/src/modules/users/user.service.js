@@ -25,7 +25,8 @@ export default class UserService {
     const existing = await this.repository.findById(firebaseUser.uid);
     if (existing) return existing;
 
-    const displayName = firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User";
+    const displayName =
+      firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User";
     const profile = {
       uid: firebaseUser.uid,
       email: firebaseUser.email || null,
@@ -67,6 +68,11 @@ export default class UserService {
 
   async requestAvatarUpload(uid, body) {
     // Placeholder for Section 18 (Firebase Storage signed URL).
-    return { uploadUrl: null, downloadUrl: null, storagePath: null, stub: true };
+    return {
+      uploadUrl: null,
+      downloadUrl: null,
+      storagePath: null,
+      stub: true,
+    };
   }
 }

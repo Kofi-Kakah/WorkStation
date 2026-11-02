@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { useColorMode } from '@chakra-ui/react';
+import { useEffect, useRef } from "react";
+import { useColorMode } from "@chakra-ui/react";
 
-const THEME_STORAGE_KEY = 'unified-platform-theme';
+const THEME_STORAGE_KEY = "unified-platform-theme";
 
 /**
  * One shared theme state. Chakra's `useColorMode` is the single source of
@@ -21,7 +21,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      if (stored === 'light' || stored === 'dark') {
+      if (stored === "light" || stored === "dark") {
         setColorMode(stored);
       }
     } catch {
@@ -32,10 +32,10 @@ export function ThemeProvider({ children }) {
   // Keep <html> in sync with Chakra's color mode so Tailwind dark variant works.
   useEffect(() => {
     const root = document.documentElement;
-    if (colorMode === 'dark') {
-      root.classList.add('dark');
+    if (colorMode === "dark") {
+      root.classList.add("dark");
     } else {
-      root.classList.remove('dark');
+      root.classList.remove("dark");
     }
   }, [colorMode]);
 

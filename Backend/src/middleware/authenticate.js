@@ -1,4 +1,4 @@
-import { getAuth } from '../config/firebase.js';
+import { getAuth } from "../config/firebase.js";
 
 /**
  * Express middleware that verifies the Firebase ID token from the
@@ -10,11 +10,13 @@ import { getAuth } from '../config/firebase.js';
  */
 export async function authenticate(req, res, next) {
   try {
-    const header = req.headers.authorization || '';
-    const [scheme, token] = header.split(' ');
+    const header = req.headers.authorization || "";
+    const [scheme, token] = header.split(" ");
 
-    if (scheme !== 'Bearer' || !token) {
-      return res.status(401).json({ error: 'Missing or malformed Authorization header' });
+    if (scheme !== "Bearer" || !token) {
+      return res
+        .status(401)
+        .json({ error: "Missing or malformed Authorization header" });
     }
 
     const auth = getAuth();
@@ -30,11 +32,12 @@ export async function authenticate(req, res, next) {
 
     return next();
   } catch (error) {
-    const message = error?.code === 'auth/id-token-expired'
-      ? 'ID token has expired'
-      : error?.code === 'auth/id-token-revoked'
-        ? 'ID token has been revoked'
-        : 'Invalid ID token';
+    const message =
+      error?.code === "auth/id-token-expired"
+        ? "ID token has expired"
+        : error?.code === "auth/id-token-revoked"
+          ? "ID token has been revoked"
+          : "Invalid ID token";
 
     return res.status(401).json({ error: message });
   }

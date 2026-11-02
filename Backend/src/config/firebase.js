@@ -39,7 +39,12 @@ function getEmulatorCert() {
  */
 export function initializeFirebase() {
   if (admin.apps.length > 0) {
-    return { firestore: firestoreInstance, auth: authInstance, storage: storageInstance, messaging: messagingInstance };
+    return {
+      firestore: firestoreInstance,
+      auth: authInstance,
+      storage: storageInstance,
+      messaging: messagingInstance,
+    };
   }
 
   const projectId = env.firebase.projectId || "workshop-111f1";
@@ -48,8 +53,10 @@ export function initializeFirebase() {
     process.env.NODE_ENV === "test";
 
   if (useEmulator) {
-    process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
-    process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099";
+    process.env.FIRESTORE_EMULATOR_HOST =
+      process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
+    process.env.FIREBASE_AUTH_EMULATOR_HOST =
+      process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099";
     // A structurally-valid credential keeps the Admin SDK from falling back
     // to Application Default Credentials (which cannot detect a project ID
     // on a local dev box). The emulator ignores the actual key material.
@@ -57,7 +64,11 @@ export function initializeFirebase() {
       credential: admin.credential.cert(getEmulatorCert()),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
-  } else if (env.firebase.projectId && env.firebase.privateKey && env.firebase.clientEmail) {
+  } else if (
+    env.firebase.projectId &&
+    env.firebase.privateKey &&
+    env.firebase.clientEmail
+  ) {
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: env.firebase.projectId,
@@ -82,7 +93,12 @@ export function initializeFirebase() {
   // Use admin timestamps consistently.
   firestoreInstance.settings({ timestampsInSnapshots: true });
 
-  return { firestore: firestoreInstance, auth: authInstance, storage: storageInstance, messaging: messagingInstance };
+  return {
+    firestore: firestoreInstance,
+    auth: authInstance,
+    storage: storageInstance,
+    messaging: messagingInstance,
+  };
 }
 
 export function getFirestore() {
@@ -105,4 +121,10 @@ export function getMessaging() {
   return messagingInstance;
 }
 
-export default { initializeFirebase, getFirestore, getAuth, getStorage, getMessaging };
+export default {
+  initializeFirebase,
+  getFirestore,
+  getAuth,
+  getStorage,
+  getMessaging,
+};

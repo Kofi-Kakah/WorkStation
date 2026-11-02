@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut, getIdToken } from 'firebase/auth';
-import { auth } from '../lib/firebase.js';
-import { api } from '../services/apiClient.js';
-import AuthContext from './AuthContext.jsx';
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, signOut, getIdToken } from "firebase/auth";
+import { auth } from "../lib/firebase.js";
+import { api } from "../services/apiClient.js";
+import AuthContext from "./AuthContext.jsx";
 
 /**
  * AuthContext holds:
@@ -24,11 +24,11 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const res = await api.get('/auth/me');
+      const res = await api.get("/auth/me");
       setProfile(res.user || null);
     } catch (error) {
       // Token may be stale; the API call failing is not fatal.
-      console.warn('Profile sync failed', error?.message);
+      console.warn("Profile sync failed", error?.message);
       setProfile(null);
     }
   };

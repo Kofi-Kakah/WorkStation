@@ -6,11 +6,11 @@
  * record.
  */
 export const ROLES = {
-  OWNER: 'owner',
-  ADMIN: 'admin',
-  PROJECT_MANAGER: 'project_manager',
-  MEMBER: 'member',
-  GUEST: 'guest',
+  OWNER: "owner",
+  ADMIN: "admin",
+  PROJECT_MANAGER: "project_manager",
+  MEMBER: "member",
+  GUEST: "guest",
 };
 
 export const ROLE_HIERARCHY = {
@@ -35,14 +35,14 @@ export function roleAtLeast(role, requiredRole) {
  * Add more granular checks here as the product grows.
  */
 export const PERMISSIONS = {
-  MANAGE_WORKSPACE: 'workspace:manage',
-  MANAGE_MEMBERS: 'workspace:members',
-  MANAGE_PROJECTS: 'workspace:projects',
-  CREATE_CHANNEL: 'workspace:channels',
-  CREATE_PROJECT: 'workspace:create_project',
-  EDIT_ISSUE: 'issue:edit',
-  DELETE_ISSUE: 'issue:delete',
-  MANAGE_BOARD: 'board:manage',
+  MANAGE_WORKSPACE: "workspace:manage",
+  MANAGE_MEMBERS: "workspace:members",
+  MANAGE_PROJECTS: "workspace:projects",
+  CREATE_CHANNEL: "workspace:channels",
+  CREATE_PROJECT: "workspace:create_project",
+  EDIT_ISSUE: "issue:edit",
+  DELETE_ISSUE: "issue:delete",
+  MANAGE_BOARD: "board:manage",
 };
 
 export default { ROLES, ROLE_HIERARCHY, roleAtLeast, PERMISSIONS };

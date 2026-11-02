@@ -22,7 +22,11 @@ export function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+      const cred = await createUserWithEmailAndPassword(
+        firebaseAuth,
+        email,
+        password,
+      );
       if (displayName) {
         await updateProfile(cred.user, { displayName });
       }
@@ -45,9 +49,13 @@ export function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-bg-app dark:bg-bg-app-dark">
       <GlassCard className="w-full max-w-md p-6">
         <div className="text-center mb-6">
-          <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-amethyst-500 to-amethyst-700 flex items-center justify-center text-white font-bold text-xl">U</div>
+          <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-amethyst-500 to-amethyst-700 flex items-center justify-center text-white font-bold text-xl">
+            U
+          </div>
           <h1 className="text-xl font-bold mt-3">Create your account</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Get started in seconds</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Get started in seconds
+          </p>
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
@@ -76,12 +84,16 @@ export function RegisterPage() {
             className="w-full px-3 py-2 rounded-lg bg-white dark:bg-whiteAlpha-50 border border-blackAlpha-200 dark:border-whiteAlpha-100 text-sm focus:outline-none focus:ring-2 focus:ring-amethyst-400"
           />
           {error && <p className="text-sm text-red-500">{error}</p>}
-          <PrimaryButton type="submit" isLoading={loading}>Create account</PrimaryButton>
+          <PrimaryButton type="submit" isLoading={loading}>
+            Create account
+          </PrimaryButton>
         </form>
 
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
           Already have an account?{" "}
-          <a href="/login" className="text-amethyst-600 hover:underline">Sign in</a>
+          <a href="/login" className="text-amethyst-600 hover:underline">
+            Sign in
+          </a>
         </p>
       </GlassCard>
     </div>

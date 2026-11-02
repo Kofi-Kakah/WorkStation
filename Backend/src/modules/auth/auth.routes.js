@@ -92,7 +92,10 @@ router.post("/password-reset/request", async (req, res, next) => {
     try {
       await auth.getUserByEmail(email);
       const link = await auth.generatePasswordResetLink(email);
-      return res.json({ ok: true, link: process.env.NODE_ENV !== "production" ? link : undefined });
+      return res.json({
+        ok: true,
+        link: process.env.NODE_ENV !== "production" ? link : undefined,
+      });
     } catch (err) {
       if (err?.code === "auth/user-not-found") return res.json({ ok: true });
       throw err;

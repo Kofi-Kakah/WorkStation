@@ -1,4 +1,4 @@
-import { Button } from '@chakra-ui/react';
+import { Button } from "@chakra-ui/react";
 
 /**
  * Primary Amethyst button.
@@ -12,9 +12,9 @@ export function PrimaryButton({ children, ...props }) {
     <Button
       bg="amethyst.600"
       color="white"
-      _hover={{ bg: 'amethyst.700' }}
-      _active={{ bg: 'amethyst.800' }}
-      _disabled={{ bg: 'amethyst.300', cursor: 'not-allowed' }}
+      _hover={{ bg: "amethyst.700" }}
+      _active={{ bg: "amethyst.800" }}
+      _disabled={{ bg: "amethyst.300", cursor: "not-allowed" }}
       borderRadius="10px"
       fontWeight="600"
       {...props}

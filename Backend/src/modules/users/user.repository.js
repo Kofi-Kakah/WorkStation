@@ -28,7 +28,8 @@ export class UserRepository {
     // prefix match on displayName / email and will be replaced by an
     // Algolia/elastic index in a later section if needed.
     const q = query.toLowerCase().trim();
-    const snap = await fs.collection(COLLECTION)
+    const snap = await fs
+      .collection(COLLECTION)
       .orderBy("searchLower")
       .startAt(q)
       .endAt(q + "\u{ffff}")

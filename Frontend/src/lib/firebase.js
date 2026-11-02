@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Client-side Firebase configuration.
 // Vite exposes env vars prefixed with VITE_ at build time.
@@ -20,9 +20,11 @@ const firestore = getFirestore(app);
 const storage = getStorage(app);
 
 // Connect to emulators in development when the flag is set.
-if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarningInProduction: true });
-  connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
+if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === "true") {
+  connectAuthEmulator(auth, "http://127.0.0.1:9099", {
+    disableWarningInProduction: true,
+  });
+  connectFirestoreEmulator(firestore, "127.0.0.1", 8080);
 }
 
 export { app, auth, firestore, storage };

@@ -1,4 +1,4 @@
-import { roleAtLeast } from '../shared/services/permissionService.js';
+import { roleAtLeast } from "../shared/services/permissionService.js";
 
 /**
  * `authorize` middleware factory.
@@ -12,10 +12,14 @@ import { roleAtLeast } from '../shared/services/permissionService.js';
  * middleware is intentionally thin — the actual membership lookup happens in
  * per-route middleware that attaches `req.membership` / `req.projectMembership`.
  */
-export function authorize({ roles = null, workspaceRole = null, projectRole = null } = {}) {
+export function authorize({
+  roles = null,
+  workspaceRole = null,
+  projectRole = null,
+} = {}) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ error: "Authentication required" });
     }
 
     const membership = req.membership || {};
@@ -24,21 +28,25 @@ export function authorize({ roles = null, workspaceRole = null, projectRole = nu
     if (roles) {
       const userRole = membership.role;
       if (!userRole || !roles.some((r) => roleAtLeast(userRole, r))) {
-        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+        return res.status(403).json({ error: "Forbidden: insufficient role" });
       }
     }
 
     if (workspaceRole) {
       const userRole = membership.role;
       if (!userRole || !roleAtLeast(userRole, workspaceRole)) {
-        return res.status(403).json({ error: 'Forbidden: insufficient workspace role' });
+        return res
+          .status(403)
+          .json({ error: "Forbidden: insufficient workspace role" });
       }
     }
 
     if (projectRole) {
       const userRole = projectMembership?.role;
       if (!userRole || !roleAtLeast(userRole, projectRole)) {
-        return res.status(403).json({ error: 'Forbidden: insufficient project role' });
+        return res
+          .status(403)
+          .json({ error: "Forbidden: insufficient project role" });
       }
     }
 

@@ -1,9 +1,9 @@
 class InvitationController {
   async get(req, res, next) {
     try {
-      const err = new Error('Invitations not implemented yet');
+      const err = new Error("Invitations not implemented yet");
       err.statusCode = 501;
-      err.code = 'NOT_IMPLEMENTED';
+      err.code = "NOT_IMPLEMENTED";
       throw err;
     } catch (error) {
       next(error);
@@ -12,9 +12,9 @@ class InvitationController {
 
   async accept(req, res, next) {
     try {
-      const err = new Error('Invitations not implemented yet');
+      const err = new Error("Invitations not implemented yet");
       err.statusCode = 501;
-      err.code = 'NOT_IMPLEMENTED';
+      err.code = "NOT_IMPLEMENTED";
       throw err;
     } catch (error) {
       next(error);
@@ -23,9 +23,9 @@ class InvitationController {
 
   async reject(req, res, next) {
     try {
-      const err = new Error('Invitations not implemented yet');
+      const err = new Error("Invitations not implemented yet");
       err.statusCode = 501;
-      err.code = 'NOT_IMPLEMENTED';
+      err.code = "NOT_IMPLEMENTED";
       throw err;
     } catch (error) {
       next(error);
@@ -34,4 +34,3 @@ class InvitationController {
 }
 
 export default InvitationController;
-

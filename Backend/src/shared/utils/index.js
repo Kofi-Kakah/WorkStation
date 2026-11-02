@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
-import admin from 'firebase-admin';
+import { v4 as uuidv4 } from "uuid";
+import admin from "firebase-admin";
 
 /**
  * Small shared utilities used across modules.
@@ -20,11 +20,12 @@ export const slugify = (str) =>
   String(str)
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 export const generateId = () => uuidv4();
 
-export const serverTimestamp = () => admin.firestore.FieldValue.serverTimestamp();
+export const serverTimestamp = () =>
+  admin.firestore.FieldValue.serverTimestamp();
 
 export default { pick, omit, slugify, generateId, serverTimestamp };
