@@ -5,6 +5,9 @@ import userRoutes from "../modules/users/user.routes.js";
 import workspaceRoutes from "../modules/workspaces/workspace.routes.js";
 import projectRoutes from "../modules/projects/project.routes.js";
 import invitationRoutes from "../modules/invitations/invitation.routes.js";
+import channelRoutes from "../modules/channels/channel.routes.js";
+import messageRoutes from "../modules/messages/message.routes.js";
+import attachmentRoutes from "../modules/attachments/attachment.routes.js";
 
 const router = Router();
 
@@ -14,14 +17,9 @@ router.use("/users", userRoutes);
 router.use("/workspaces", workspaceRoutes);
 router.use("/projects", projectRoutes);
 router.use("/invitations", invitationRoutes);
-
-// Later sections mount their module routers here:
-// router.use('/projects', projectRoutes);
-// router.use('/channels', channelRoutes);
-// router.use('/messages', messageRoutes);
-// router.use('/boards', boardRoutes);
-// router.use('/issues', issueRoutes);
-// router.use('/integrations', integrationRoutes);
-// router.use('/activities', activityRoutes);
+router.use("/channels", channelRoutes);
+router.use("/channels", messageRoutes);
+router.use("/channels", attachmentRoutes);
+router.use("/messages", messageRoutes);
 
 export default router;

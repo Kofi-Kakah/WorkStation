@@ -11,6 +11,7 @@ import ProfilePage from "../features/profile/ProfilePage.jsx";
 import ProjectsPage from "../features/projects/ProjectsPage.jsx";
 import ProjectDetailPage from "../features/projects/ProjectDetailPage.jsx";
 import InvitationResponsePage from "../features/workspace/InvitationResponsePage.jsx";
+import ChatPage from "../features/chat/ChatPage.jsx";
 import {
   mockProjects,
   mockIssues,
@@ -67,6 +68,22 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/channels"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dm"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
           </ProtectedRoute>
         }
       />

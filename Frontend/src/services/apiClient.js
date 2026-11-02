@@ -14,7 +14,7 @@ class ApiClient {
     this.base = BASE;
   }
 
-  async request(method, path, body, extraHeaders = {}) {
+  async request(method, path, body, extraHeaders = {}, rawBody = false) {
     const user = auth.currentUser;
     let token = null;
     if (user) {
@@ -27,7 +27,7 @@ class ApiClient {
     }
 
     const headers = {
-      "Content-Type": "application/json",
+      ...(rawBody ? {} : { "Content-Type": "application/json" }),
       ...extraHeaders,
     };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -36,7 +36,11 @@ class ApiClient {
     const init = { method, headers };
 
     if (body !== undefined && body !== null) {
-      init.body = typeof body === "string" ? body : JSON.stringify(body);
+      init.body = rawBody
+        ? body
+        : typeof body === "string"
+          ? body
+          : JSON.stringify(body);
     }
 
     const res = await fetch(url, init);
@@ -73,6 +77,9 @@ class ApiClient {
   }
   put(path, body, headers) {
     return this.request("PUT", path, body, headers);
+  }
+  putBinary(path, body, headers) {
+    return this.request("PUT", path, body, headers, true);
   }
   delete(path, body, headers) {
     return this.request("DELETE", path, body, headers);

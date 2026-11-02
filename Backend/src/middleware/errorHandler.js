@@ -6,6 +6,13 @@ import { AppError } from "../shared/errors/index.js";
  * errors (unexpected, logged with full stack).
  */
 export function errorHandler(err, req, res, _next) {
+  if (err?.type === "entity.too.large" || err?.status === 413) {
+    return res.status(413).json({
+      error: "Request body exceeds the allowed size",
+      code: "PAYLOAD_TOO_LARGE",
+    });
+  }
+
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {
       logger.error("AppError", {
