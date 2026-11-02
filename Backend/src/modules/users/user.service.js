@@ -1,17 +1,19 @@
-﻿import { getAuth } from "../../config/firebase.js";
 import UserRepository from "./user.repository.js";
+import WorkspaceRepository from "../workspaces/workspace.repository.js";
 import { ROLES } from "../../shared/services/permissionService.js";
-import { generateId, serverTimestamp } from "../../shared/utils/index.js";
-
-const auth = getAuth();
-const repo = new UserRepository();
+import { Errors } from "../../shared/errors/index.js";
+import { serverTimestamp } from "../../shared/utils/index.js";
 
 /**
  * User service. Owns all user-profile business logic.
  */
 export default class UserService {
-  constructor(repository = repo) {
+  constructor(
+    repository = new UserRepository(),
+    workspaceRepository = new WorkspaceRepository(),
+  ) {
     this.repository = repository;
+    this.workspaces = workspaceRepository;
   }
 
   /**
@@ -37,6 +39,7 @@ export default class UserService {
       timezone: null,
       locale: null,
       role: ROLES.MEMBER,
+      workspaceIds: [],
       notificationPreferences: { email: true, inApp: true, push: true },
       searchLower: displayName.toLowerCase(),
       createdAt: serverTimestamp(),
@@ -47,26 +50,54 @@ export default class UserService {
     return { id: firebaseUser.uid, ...profile };
   }
 
-  async getProfile(uid) {
-    return this.repository.findById(uid);
-  }
+  async getProfile(uid, actorUid = uid) {
+    const profile = await this.repository.findById(uid);
+    if (!profile) return null;
+    if (uid === actorUid) return profile;
 
-  async updateProfile(uid, updates, actor) {
-    if ("role" in updates) {
-      const err = new Error("Role changes are not permitted here");
-      err.statusCode = 403;
-      err.code = "FORBIDDEN";
-      throw err;
+    const [actorWorkspaces, targetWorkspaces] = await Promise.all([
+      this.workspaces.listForUser(actorUid),
+      this.workspaces.listForUser(uid),
+    ]);
+    const sharedWorkspaceIds = new Set(
+      actorWorkspaces.map((workspace) => workspace.id),
+    );
+    if (
+      !targetWorkspaces.some((workspace) =>
+        sharedWorkspaceIds.has(workspace.id),
+      )
+    ) {
+      throw Errors.notFound("User not found");
     }
 
+    return {
+      uid: profile.uid,
+      email: profile.email,
+      displayName: profile.displayName,
+      avatarUrl: profile.avatarUrl,
+      bio: profile.bio,
+    };
+  }
+
+  async updateProfile(uid, updates) {
     const safe = { ...updates };
-    if (safe.displayName) safe.searchLower = safe.displayName.toLowerCase();
+    if (safe.displayName !== undefined) {
+      safe.displayName = safe.displayName.trim();
+      safe.searchLower = safe.displayName.toLowerCase();
+    }
+    if (safe.notificationPreferences) {
+      const current = await this.repository.findById(uid);
+      safe.notificationPreferences = {
+        ...current?.notificationPreferences,
+        ...safe.notificationPreferences,
+      };
+    }
 
     const profile = await this.repository.upsert(uid, safe);
     return profile;
   }
 
-  async requestAvatarUpload(uid, body) {
+  async requestAvatarUpload(_uid, _body) {
     // Placeholder for Section 18 (Firebase Storage signed URL).
     return {
       uploadUrl: null,

@@ -6,6 +6,8 @@ import DashboardPage from "../features/dashboard/DashboardPage.jsx";
 import HealthPage from "../features/dashboard/HealthPage.jsx";
 import LoginPage from "../features/auth/LoginPage.jsx";
 import RegisterPage from "../features/auth/RegisterPage.jsx";
+import WorkspaceSettingsPage from "../features/workspace/WorkspaceSettingsPage.jsx";
+import ProfilePage from "../features/profile/ProfilePage.jsx";
 import {
   mockProjects,
   mockIssues,
@@ -49,6 +51,22 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/workspace"
+        element={
+          <ProtectedRoute>
+            <WorkspaceSettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/health"
         element={

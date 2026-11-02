@@ -2,12 +2,14 @@ import { Router } from "express";
 import health from "./health.js";
 import authRoutes from "../modules/auth/auth.routes.js";
 import userRoutes from "../modules/users/user.routes.js";
+import workspaceRoutes from "../modules/workspaces/workspace.routes.js";
 
 const router = Router();
 
 router.use(health);
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
+router.use("/workspaces", workspaceRoutes);
 
 // Later sections mount their module routers here:
 // router.use('/projects', projectRoutes);

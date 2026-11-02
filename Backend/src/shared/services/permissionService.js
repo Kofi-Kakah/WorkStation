@@ -45,4 +45,21 @@ export const PERMISSIONS = {
   MANAGE_BOARD: "board:manage",
 };
 
-export default { ROLES, ROLE_HIERARCHY, roleAtLeast, PERMISSIONS };
+export function canManageWorkspace(role) {
+  return roleAtLeast(role, ROLES.ADMIN);
+}
+
+export function canManageMemberRole(actorRole, targetRole) {
+  if (![ROLES.OWNER, ROLES.ADMIN].includes(actorRole)) return false;
+  if (targetRole === ROLES.OWNER) return false;
+  return actorRole === ROLES.OWNER || targetRole !== ROLES.ADMIN;
+}
+
+export default {
+  ROLES,
+  ROLE_HIERARCHY,
+  roleAtLeast,
+  PERMISSIONS,
+  canManageWorkspace,
+  canManageMemberRole,
+};

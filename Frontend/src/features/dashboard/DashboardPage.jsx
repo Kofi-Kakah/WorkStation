@@ -21,7 +21,9 @@ import {
   Users,
   Hash,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import GlassCard from "../../components/ui/GlassCard.jsx";
+import { useAuth } from "../../contexts/useAuth.jsx";
 
 const HEATMAP = [
   [0, 0, 1, 2, 1, 0, 1, 0],
@@ -511,6 +513,8 @@ export function DashboardPage({
   channels = [],
   notifications = [],
 }) {
+  const navigate = useNavigate();
+  const { activeWorkspace } = useAuth();
   const openIssues = issues.filter((issue) => issue.status !== "done");
   const assignedIssues = issues.filter((issue) => issue.assignee).length;
   const projectProgress = projects.length
@@ -556,6 +560,33 @@ export function DashboardPage({
 
   return (
     <Box display="flex" flexDirection="column" gap={{ base: 5, lg: 6 }}>
+      {!activeWorkspace && (
+        <GlassCard className="p-5">
+          <HStack
+            justify="space-between"
+            align={{ base: "flex-start", sm: "center" }}
+            flexDirection={{ base: "column", sm: "row" }}
+            gap={4}
+          >
+            <Box>
+              <Text fontWeight="600">Set up your workspace</Text>
+              <Text mt={1} color="textSecondary" fontSize="sm">
+                Create a workspace to organize your team and projects.
+              </Text>
+            </Box>
+            <Button
+              variant="unstyled"
+              className="ui-button ui-button--primary"
+              onClick={() => navigate("/workspace")}
+              flexShrink={0}
+              minH="38px"
+              px={4}
+            >
+              Create workspace
+            </Button>
+          </HStack>
+        </GlassCard>
+      )}
       <HStack
         justify="space-between"
         align={{ base: "flex-start", sm: "center" }}
@@ -568,7 +599,7 @@ export function DashboardPage({
             fontWeight="700"
             letterSpacing="-0.035em"
           >
-            Workspace overview
+            {activeWorkspace?.name || "Workspace overview"}
           </Text>
           <HStack mt={2} spacing={2} color="textMuted">
             <Box

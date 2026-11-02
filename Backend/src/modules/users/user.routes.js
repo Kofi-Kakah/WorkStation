@@ -8,7 +8,7 @@ const router = Router();
 const ctrl = new UserController();
 
 const updateProfileSchema = z.object({
-  displayName: z.string().min(1).max(100).optional(),
+  displayName: z.string().trim().min(1).max(100).optional(),
   bio: z.string().max(500).optional(),
   avatarUrl: z.string().url().optional(),
   timezone: z.string().max(64).optional(),

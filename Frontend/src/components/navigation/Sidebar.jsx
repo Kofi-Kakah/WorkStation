@@ -1,8 +1,17 @@
-import { Box, Button, IconButton, Text, Tooltip } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  IconButton,
+  Select,
+  Text,
+  Tooltip,
+} from "@chakra-ui/react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/useAuth.jsx";
 import {
   Bell,
+  Building2,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
@@ -52,7 +61,7 @@ const NAV_GROUPS = [
     label: "Account",
     items: [
       { label: "Notifications", icon: Bell, to: "/notifications" },
-      { label: "Settings", icon: Settings, to: "/settings" },
+      { label: "Workspace settings", icon: Settings, to: "/workspace" },
       { label: "Profile", icon: UserRound, to: "/profile" },
     ],
   },
@@ -70,6 +79,7 @@ export function Sidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { workspaces, activeWorkspace, selectWorkspace } = useAuth();
   const [expandedGroups, setExpandedGroups] = useState({});
 
   const isActive = (to) =>
@@ -118,13 +128,30 @@ export function Sidebar({
               <Text fontSize="sm" fontWeight="700" lineHeight="1.25">
                 WorkStation
               </Text>
-              <Text
+              <Select
+                aria-label="Select workspace"
+                value={activeWorkspace?.id || ""}
+                onChange={(event) => selectWorkspace(event.target.value)}
+                size="xs"
+                variant="unstyled"
+                mt={1}
+                maxW="150px"
+                color="textMuted"
                 fontSize="xs"
-                color="gray.500"
-                _dark={{ color: "whiteAlpha.500" }}
+                icon={<Building2 size={12} />}
+                _focusVisible={{ boxShadow: "0 0 0 2px var(--accent)" }}
               >
-                Workspace
-              </Text>
+                {!workspaces.length && (
+                  <option value="" disabled>
+                    No workspace yet
+                  </option>
+                )}
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </Select>
             </Box>
           )}
         </Box>

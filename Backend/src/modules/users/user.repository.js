@@ -1,18 +1,21 @@
 ﻿import { getFirestore } from "../../config/firebase.js";
-import { generateId, serverTimestamp } from "../../shared/utils/index.js";
+import { serverTimestamp } from "../../shared/utils/index.js";
 
-const fs = getFirestore();
 const COLLECTION = "users";
 
 export class UserRepository {
+  constructor(db = getFirestore()) {
+    this.db = db;
+  }
+
   async findById(uid) {
-    const snap = await fs.collection(COLLECTION).doc(uid).get();
+    const snap = await this.db.collection(COLLECTION).doc(uid).get();
     if (!snap.exists) return null;
     return { id: snap.id, ...snap.data() };
   }
 
   async upsert(uid, data) {
-    const ref = fs.collection(COLLECTION).doc(uid);
+    const ref = this.db.collection(COLLECTION).doc(uid);
     const payload = {
       ...data,
       updatedAt: serverTimestamp(),
@@ -28,7 +31,7 @@ export class UserRepository {
     // prefix match on displayName / email and will be replaced by an
     // Algolia/elastic index in a later section if needed.
     const q = query.toLowerCase().trim();
-    const snap = await fs
+    const snap = await this.db
       .collection(COLLECTION)
       .orderBy("searchLower")
       .startAt(q)

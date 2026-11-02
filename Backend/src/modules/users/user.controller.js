@@ -34,7 +34,10 @@ export default class UserController {
 
   async getProfile(req, res, next) {
     try {
-      const profile = await this.service.getProfile(req.params.userId);
+      const profile = await this.service.getProfile(
+        req.params.userId,
+        req.user.uid,
+      );
       if (!profile) throw Errors.notFound("User not found");
       return res.json({ ok: true, user: profile });
     } catch (error) {
