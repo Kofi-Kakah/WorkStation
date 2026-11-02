@@ -83,14 +83,14 @@ export function RegisterPage() {
   return (
     <div
       role="main"
-      className="flex min-h-screen min-h-[100svh] items-center justify-center overflow-x-hidden bg-gradient-to-br from-amethyst-100 via-white to-amethyst-200 px-4 py-8 text-text-primary dark:from-[#1a1026] dark:via-[#261437] dark:to-[#392053] dark:text-white sm:px-6"
+      className="auth-page flex min-h-screen min-h-[100svh] items-center justify-center overflow-x-hidden px-4 py-8 text-primary sm:px-6"
     >
       <GlassCard className="w-full max-w-md p-6 sm:p-8">
         <header className="mb-7 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white">
+          <h1 className="text-2xl font-semibold tracking-tight text-primary">
             Create your account
           </h1>
-          <p className="mt-2 text-sm text-text-secondary dark:text-text-secondary-dark">
+          <p className="mt-2 text-sm text-secondary">
             Get started in seconds.
           </p>
         </header>
@@ -99,7 +99,7 @@ export function RegisterPage() {
           <div>
             <label
               htmlFor="display-name"
-              className="mb-2 block text-sm font-medium text-text-primary dark:text-white/90"
+              className="mb-2 block text-sm font-medium text-primary"
             >
               Display name
             </label>
@@ -107,7 +107,7 @@ export function RegisterPage() {
               <UserRound
                 aria-hidden="true"
                 size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="auth-input-icon pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
               />
               <input
                 id="display-name"
@@ -116,7 +116,6 @@ export function RegisterPage() {
                 autoComplete="name"
                 required
                 minLength={2}
-                style={{ paddingLeft: "2.5rem" }}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your name"
@@ -124,17 +123,13 @@ export function RegisterPage() {
                 aria-describedby={
                   fieldErrors.displayName ? "display-name-error" : undefined
                 }
-                className={`h-12 w-full rounded-xl border bg-white/75 py-3 pl-10 pr-3 text-sm text-text-primary outline-none transition placeholder:text-gray-400 hover:border-amethyst-300 focus:border-amethyst-500 focus:ring-2 focus:ring-amethyst-500/25 dark:bg-[#1a1026]/35 dark:text-white dark:placeholder:text-white/40 ${
-                  fieldErrors.displayName
-                    ? "border-red-500 dark:border-red-400"
-                    : "border-black/10 dark:border-white/10"
-                }`}
+                className="auth-input auth-input--leading"
               />
             </div>
             {fieldErrors.displayName && (
               <p
                 id="display-name-error"
-                className="mt-1.5 text-xs text-red-600 dark:text-red-300"
+                className="mt-1.5 text-xs text-danger"
               >
                 {fieldErrors.displayName}
               </p>
@@ -144,7 +139,7 @@ export function RegisterPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-text-primary dark:text-white/90"
+              className="mb-2 block text-sm font-medium text-primary"
             >
               Email address
             </label>
@@ -152,7 +147,7 @@ export function RegisterPage() {
               <Mail
                 aria-hidden="true"
                 size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="auth-input-icon pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
               />
               <input
                 id="email"
@@ -160,23 +155,18 @@ export function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
-                style={{ paddingLeft: "2.5rem" }}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 aria-invalid={Boolean(fieldErrors.email)}
                 aria-describedby={fieldErrors.email ? "email-error" : undefined}
-                className={`h-12 w-full rounded-xl border bg-white/75 py-3 pl-10 pr-3 text-sm text-text-primary outline-none transition placeholder:text-gray-400 hover:border-amethyst-300 focus:border-amethyst-500 focus:ring-2 focus:ring-amethyst-500/25 dark:bg-[#1a1026]/35 dark:text-white dark:placeholder:text-white/40 ${
-                  fieldErrors.email
-                    ? "border-red-500 dark:border-red-400"
-                    : "border-black/10 dark:border-white/10"
-                }`}
+                className="auth-input auth-input--leading"
               />
             </div>
             {fieldErrors.email && (
               <p
                 id="email-error"
-                className="mt-1.5 text-xs text-red-600 dark:text-red-300"
+                className="mt-1.5 text-xs text-danger"
               >
                 {fieldErrors.email}
               </p>
@@ -186,7 +176,7 @@ export function RegisterPage() {
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-text-primary dark:text-white/90"
+              className="mb-2 block text-sm font-medium text-primary"
             >
               Password
             </label>
@@ -194,7 +184,7 @@ export function RegisterPage() {
               <LockKeyhole
                 aria-hidden="true"
                 size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="auth-input-icon pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
               />
               <input
                 id="password"
@@ -203,7 +193,6 @@ export function RegisterPage() {
                 autoComplete="new-password"
                 required
                 minLength={6}
-                style={{ paddingLeft: "2.5rem", paddingRight: "3rem" }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
@@ -211,18 +200,14 @@ export function RegisterPage() {
                 aria-describedby={
                   fieldErrors.password ? "password-error" : "password-hint"
                 }
-                className={`h-12 w-full rounded-xl border bg-white/75 py-3 pl-10 pr-12 text-sm text-text-primary outline-none transition placeholder:text-gray-400 hover:border-amethyst-300 focus:border-amethyst-500 focus:ring-2 focus:ring-amethyst-500/25 dark:bg-[#1a1026]/35 dark:text-white dark:placeholder:text-white/40 ${
-                  fieldErrors.password
-                    ? "border-red-500 dark:border-red-400"
-                    : "border-black/10 dark:border-white/10"
-                }`}
+                className="auth-input auth-input--leading auth-input--trailing"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((visible) => !visible)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
-                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-gray-500 transition hover:bg-black/5 hover:text-amethyst-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amethyst-500 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-amethyst-300"
+                className="auth-password-toggle absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {showPassword ? (
                   <EyeOff aria-hidden="true" size={18} />
@@ -234,14 +219,14 @@ export function RegisterPage() {
             {fieldErrors.password ? (
               <p
                 id="password-error"
-                className="mt-1.5 text-xs text-red-600 dark:text-red-300"
+                className="mt-1.5 text-xs text-danger"
               >
                 {fieldErrors.password}
               </p>
             ) : (
               <p
                 id="password-hint"
-                className="mt-1.5 text-xs text-text-secondary dark:text-text-secondary-dark"
+                className="mt-1.5 text-xs text-secondary"
               >
                 Use at least 6 characters.
               </p>
@@ -251,7 +236,7 @@ export function RegisterPage() {
           {error && (
             <p
               role="alert"
-              className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm text-red-700 dark:text-red-200"
+              className="rounded-control border border-danger/20 bg-danger/10 px-3 py-2.5 text-sm text-danger"
             >
               {error}
             </p>
@@ -263,17 +248,17 @@ export function RegisterPage() {
             isLoading={loading}
             isDisabled={loading}
             loadingText="Creating account..."
-            className="mt-1 h-12 w-full rounded-xl"
+            className="mt-1 h-12 w-full rounded-control"
           >
             Create account
           </PrimaryButton>
         </form>
 
-        <p className="mt-6 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
+        <p className="mt-6 text-center text-sm text-secondary">
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-semibold text-accent underline underline-offset-4 transition-colors hover:text-accent-hot"
+            className="auth-link font-semibold"
           >
             Sign in
           </Link>

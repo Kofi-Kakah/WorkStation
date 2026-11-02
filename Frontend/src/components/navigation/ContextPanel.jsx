@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Text, HStack, Icon, Divider } from "@chakra-ui/react";
+import { Box, Text, HStack, Icon, IconButton, Divider } from "@chakra-ui/react";
 import { X, ChevronUp, ChevronDown, Users, Activity } from "lucide-react";
 
 /**
@@ -47,30 +47,30 @@ export function ContextPanel({
             {title}
           </Text>
           {subtitle && (
-            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }}>
+            <Text fontSize="xs" color="textMuted">
               {subtitle}
             </Text>
           )}
         </HStack>
         <HStack gap={1}>
-          <Box
-            p={1}
-            borderRadius="6px"
-            cursor="pointer"
-            _hover={{ bg: "blackAlpha.50" }}
+          <IconButton
+            aria-label={expanded ? "Collapse context panel" : "Expand context panel"}
+            icon={<Icon as={expanded ? ChevronUp : ChevronDown} boxSize={4} />}
+            variant="ghost"
+            size="xs"
+            color="textMuted"
+            _hover={{ bg: "surfaceRaised", color: "textPrimary" }}
             onClick={() => setExpanded((e) => !e)}
-          >
-            <Icon as={expanded ? ChevronUp : ChevronDown} boxSize={4} />
-          </Box>
-          <Box
-            p={1}
-            borderRadius="6px"
-            cursor="pointer"
-            _hover={{ bg: "blackAlpha.50" }}
+          />
+          <IconButton
+            aria-label="Close context panel"
+            icon={<Icon as={X} boxSize={4} />}
+            variant="ghost"
+            size="xs"
+            color="textMuted"
+            _hover={{ bg: "surfaceRaised", color: "textPrimary" }}
             onClick={onClose}
-          >
-            <X size={14} />
-          </Box>
+          />
         </HStack>
       </HStack>
 
@@ -82,12 +82,11 @@ export function ContextPanel({
             {activeSections.map((section) => (
               <Box key={section.label} px={3}>
                 <HStack gap={2} mb={2}>
-                  <Icon as={section.icon} boxSize={4} color="amethyst.600" />
+                  <Icon as={section.icon} boxSize={4} color="accent" />
                   <Text
                     fontSize="xs"
                     fontWeight="700"
-                    color="gray.500"
-                    _dark={{ color: "gray.400" }}
+                    color="textMuted"
                     textTransform="uppercase"
                     letterSpacing="wider"
                   >
@@ -101,7 +100,7 @@ export function ContextPanel({
                     py={1}
                     px={2}
                     borderRadius="6px"
-                    _hover={{ bg: "blackAlpha.50" }}
+                    _hover={{ bg: "surfaceRaised" }}
                   >
                     <Box minWidth={0}>
                       <Text fontSize="sm" truncate>
@@ -109,8 +108,7 @@ export function ContextPanel({
                       </Text>
                       <Text
                         fontSize="xs"
-                        color="gray.500"
-                        _dark={{ color: "gray.400" }}
+                        color="textMuted"
                         truncate
                       >
                         {item.detail}
@@ -123,10 +121,10 @@ export function ContextPanel({
                         borderRadius="full"
                         bg={
                           item.status === "online"
-                            ? "green.400"
+                            ? "success"
                             : item.status === "away"
-                              ? "yellow.400"
-                              : "gray.300"
+                              ? "warning"
+                              : "textMuted"
                         }
                         flexShrink={0}
                       />
@@ -138,7 +136,7 @@ export function ContextPanel({
           </Box>
         ) : (
           <Box p={3} textAlign="center">
-            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }}>
+            <Text fontSize="xs" color="textMuted">
               Panel collapsed
             </Text>
           </Box>

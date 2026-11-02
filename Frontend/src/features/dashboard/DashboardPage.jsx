@@ -17,9 +17,9 @@ import {
   CircleDot,
   Clock3,
   FolderKanban,
-  Kanban,
   Plus,
   Users,
+  Hash,
 } from "lucide-react";
 import GlassCard from "../../components/ui/GlassCard.jsx";
 
@@ -36,20 +36,22 @@ const HEATMAP = [
 const HEATMAP_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const STATUS_COLORS = {
   done: "green",
-  in_progress: "purple",
-  in_review: "blue",
+  in_progress: "orange",
+  in_review: "yellow",
   todo: "gray",
 };
 
 function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
   return (
-    <GlassCard className="min-w-0 p-4 sm:p-5">
+    <GlassCard
+      variant={index === 3 ? "featured" : "lg"}
+      className="min-w-0 p-4 sm:p-5"
+    >
       <HStack justify="space-between" align="start">
         <Box minW="0">
           <Text
             fontSize="xs"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.600" }}
+            color={index === 3 ? "whiteAlpha.900" : "textSecondary"}
           >
             {label}
           </Text>
@@ -69,9 +71,8 @@ function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
           w="34px"
           h="34px"
           borderRadius="10px"
-          bg="amethyst.100"
-          color="amethyst.700"
-          _dark={{ bg: "amethyst.900", color: "amethyst.300" }}
+          bg={index === 3 ? "whiteAlpha.200" : "accentSoft"}
+          color={index === 3 ? "white" : "accent"}
         >
           <Icon as={MetricIcon} boxSize={4} />
         </Box>
@@ -82,12 +83,8 @@ function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
           px={1.5}
           py={0.5}
           borderRadius="full"
-          bg={trend >= 0 ? "green.50" : "red.50"}
-          color={trend >= 0 ? "green.700" : "red.700"}
-          _dark={{
-            bg: trend >= 0 ? "green.900" : "red.900",
-            color: trend >= 0 ? "green.200" : "red.200",
-          }}
+          bg={trend >= 0 ? "successSoft" : "danger"}
+          color={trend >= 0 ? "success" : "white"}
         >
           <Icon as={trend >= 0 ? ArrowUpRight : ArrowDownRight} boxSize={3} />
           <Text fontSize="10px" fontWeight="700">
@@ -96,8 +93,7 @@ function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
         </HStack>
         <Text
           fontSize="10px"
-          color="gray.500"
-          _dark={{ color: "whiteAlpha.500" }}
+          color={index === 3 ? "whiteAlpha.800" : "textMuted"}
           noOfLines={1}
         >
           {caption}
@@ -107,15 +103,14 @@ function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
         h="2px"
         mt={4}
         borderRadius="full"
-        bg="blackAlpha.100"
-        _dark={{ bg: "whiteAlpha.100" }}
+        bg={index === 3 ? "whiteAlpha.300" : "borderSubtle"}
         overflow="hidden"
       >
         <Box
           h="full"
           w={`${[68, 46, 78, 56][index]}%`}
           borderRadius="full"
-          bg="amethyst.500"
+          bg={index === 3 ? "white" : "accent"}
         />
       </Box>
     </GlassCard>
@@ -136,8 +131,7 @@ function ActivityChart() {
           <Text
             mt={1}
             fontSize="xs"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
           >
             Issue activity over the last 7 days
           </Text>
@@ -147,9 +141,10 @@ function ActivityChart() {
           variant="outline"
           size="xs"
           h="28px"
-          borderColor="blackAlpha.200"
-          color="gray.600"
-          _dark={{ borderColor: "whiteAlpha.200", color: "whiteAlpha.700" }}
+          borderColor="borderSubtle"
+          color="textSecondary"
+          bg="surfaceRaised"
+          _hover={{ borderColor: "accentBorder", color: "textPrimary" }}
         >
           This week
         </Button>
@@ -166,8 +161,7 @@ function ActivityChart() {
           h="150px"
           justify="space-between"
           align="flex-end"
-          color="gray.500"
-          _dark={{ color: "whiteAlpha.500" }}
+          color="textMuted"
           fontSize="10px"
           aria-hidden="true"
         >
@@ -189,8 +183,7 @@ function ActivityChart() {
                 <Box
                   key={label}
                   borderTop="1px dashed"
-                  borderColor="blackAlpha.100"
-                  _dark={{ borderColor: "whiteAlpha.100" }}
+                  borderColor="borderSubtle"
                 />
               ))}
             </Box>
@@ -203,8 +196,8 @@ function ActivityChart() {
             >
               <defs>
                 <linearGradient id="activity-fill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#bd79ff" stopOpacity=".28" />
-                  <stop offset="100%" stopColor="#bd79ff" stopOpacity="0" />
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity=".28" />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path
@@ -214,16 +207,16 @@ function ActivityChart() {
               <path
                 d="M0 121 C34 112 52 116 84 108 S126 94 160 102 S211 111 244 92 S289 79 321 85 S366 66 402 74 S450 87 480 61 S530 71 558 50 S608 43 640 28"
                 fill="none"
-                stroke="#bd79ff"
+                stroke="var(--accent)"
                 strokeWidth="2.5"
                 vectorEffect="non-scaling-stroke"
               />
-              <circle cx="480" cy="61" r="4" fill="#ce97ff" />
+              <circle cx="480" cy="61" r="4" fill="var(--accent-hot)" />
               <circle
                 cx="480"
                 cy="61"
                 r="8"
-                fill="#ce97ff"
+                fill="var(--accent-hot)"
                 fillOpacity=".16"
               />
             </svg>
@@ -231,8 +224,7 @@ function ActivityChart() {
           <HStack
             justify="space-between"
             mt={2}
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
             fontSize="10px"
             aria-hidden="true"
           >
@@ -247,13 +239,7 @@ function ActivityChart() {
 }
 
 function ActivityHeatmap() {
-  const intensityClasses = [
-    "bg-black/5 dark:bg-white/[0.06]",
-    "bg-amethyst-200 dark:bg-amethyst-900",
-    "bg-amethyst-300 dark:bg-amethyst-800",
-    "bg-amethyst-500 dark:bg-amethyst-700",
-    "bg-amethyst-700 dark:bg-amethyst-500",
-  ];
+  const intensityClasses = Array.from({ length: 5 }, () => "activity-heatmap__cell");
 
   return (
     <GlassCard className="p-4 sm:p-5">
@@ -263,16 +249,14 @@ function ActivityHeatmap() {
         </Text>
         <Text
           fontSize="10px"
-          color="gray.500"
-          _dark={{ color: "whiteAlpha.500" }}
+          color="textMuted"
         >
           Last 7 days
         </Text>
       </HStack>
       <Text
         fontSize="xs"
-        color="gray.500"
-        _dark={{ color: "whiteAlpha.500" }}
+        color="textMuted"
         mb={4}
       >
         Activity across projects and conversations
@@ -283,8 +267,7 @@ function ActivityHeatmap() {
             <Text
               fontSize="9px"
               alignSelf="center"
-              color="gray.500"
-              _dark={{ color: "whiteAlpha.500" }}
+              color="textMuted"
             >
               {HEATMAP_DAYS[row]}
             </Text>
@@ -293,7 +276,7 @@ function ActivityHeatmap() {
                 key={`${row}-${column}`}
                 title={`${HEATMAP_DAYS[row]}: activity level ${level}`}
                 h="13px"
-                borderRadius="3px"
+                data-level={level}
                 className={intensityClasses[level]}
               />
             ))}
@@ -303,25 +286,23 @@ function ActivityHeatmap() {
       <HStack justify="flex-end" spacing={1.5} mt={4}>
         <Text
           fontSize="9px"
-          color="gray.500"
-          _dark={{ color: "whiteAlpha.500" }}
+          color="textMuted"
         >
           Less
         </Text>
         {intensityClasses.map((className, index) => (
           <Box
-            key={className}
+            key={index}
             title={`Activity level ${index}`}
             w="10px"
             h="10px"
-            borderRadius="2px"
+            data-level={index}
             className={className}
           />
         ))}
         <Text
           fontSize="9px"
-          color="gray.500"
-          _dark={{ color: "whiteAlpha.500" }}
+          color="textMuted"
         >
           More
         </Text>
@@ -341,8 +322,7 @@ function ProjectList({ projects }) {
           <Text
             mt={1}
             fontSize="xs"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
           >
             Progress across your workspace
           </Text>
@@ -351,8 +331,8 @@ function ProjectList({ projects }) {
           leftIcon={<Plus size={13} />}
           variant="ghost"
           size="xs"
-          color="amethyst.700"
-          _dark={{ color: "amethyst.300" }}
+          color="accent"
+          _hover={{ color: "accentHot", bg: "accentSoft" }}
         >
           New project
         </Button>
@@ -364,8 +344,7 @@ function ProjectList({ projects }) {
             py={8}
             textAlign="center"
             fontSize="sm"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
           >
             No projects yet. Create a project to start organizing work.
           </Text>
@@ -375,8 +354,7 @@ function ProjectList({ projects }) {
             key={project.id}
             py={3}
             borderTop={index === 0 ? "none" : "1px solid"}
-            borderColor="blackAlpha.100"
-            _dark={{ borderColor: "whiteAlpha.100" }}
+            borderColor="borderSubtle"
           >
             <HStack justify="space-between" gap={3}>
               <HStack minW="0" spacing={3}>
@@ -387,9 +365,8 @@ function ProjectList({ projects }) {
                   h="34px"
                   flexShrink={0}
                   borderRadius="9px"
-                  bg="amethyst.100"
-                  color="amethyst.700"
-                  _dark={{ bg: "amethyst.900", color: "amethyst.300" }}
+                  bg="accentSoft"
+                  color="accent"
                 >
                   <Icon as={FolderKanban} boxSize={4} />
                 </Box>
@@ -400,8 +377,7 @@ function ProjectList({ projects }) {
                   <Text
                     mt={0.5}
                     fontSize="10px"
-                    color="gray.500"
-                    _dark={{ color: "whiteAlpha.500" }}
+                    color="textMuted"
                     noOfLines={1}
                   >
                     {project.key} · {project.issueCount} issues ·{" "}
@@ -413,8 +389,7 @@ function ProjectList({ projects }) {
                 flexShrink={0}
                 fontSize="xs"
                 fontWeight="600"
-                color="amethyst.700"
-                _dark={{ color: "amethyst.300" }}
+                color="accent"
               >
                 {project.progress}%
               </Text>
@@ -424,15 +399,14 @@ function ProjectList({ projects }) {
               mt={3}
               ml="46px"
               borderRadius="full"
-              bg="blackAlpha.100"
-              _dark={{ bg: "whiteAlpha.100" }}
+              bg="borderSubtle"
               overflow="hidden"
             >
               <Box
                 h="full"
                 w={`${project.progress}%`}
                 borderRadius="full"
-                bg="amethyst.500"
+                bg="accent"
               />
             </Box>
           </Box>
@@ -453,8 +427,7 @@ function IssueActivity({ issues }) {
           <Text
             mt={1}
             fontSize="xs"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
           >
             Latest work from your teams
           </Text>
@@ -462,8 +435,8 @@ function IssueActivity({ issues }) {
         <Button
           variant="ghost"
           size="xs"
-          color="amethyst.700"
-          _dark={{ color: "amethyst.300" }}
+          color="accent"
+          _hover={{ color: "accentHot", bg: "accentSoft" }}
         >
           View all
         </Button>
@@ -474,8 +447,7 @@ function IssueActivity({ issues }) {
             py={8}
             textAlign="center"
             fontSize="sm"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
           >
             No issues to show yet.
           </Text>
@@ -487,15 +459,14 @@ function IssueActivity({ issues }) {
             gap={3}
             py={3}
             borderTop={index === 0 ? "none" : "1px solid"}
-            borderColor="blackAlpha.100"
-            _dark={{ borderColor: "whiteAlpha.100" }}
+            borderColor="borderSubtle"
           >
             <HStack minW="0" spacing={2.5}>
               <Icon
                 as={issue.status === "done" ? Check : CircleDot}
                 boxSize={4}
                 flexShrink={0}
-                color={issue.status === "done" ? "green.400" : "amethyst.400"}
+                color={issue.status === "done" ? "success" : "accent"}
               />
               <Box minW="0">
                 <Text fontSize="xs" fontWeight="600" noOfLines={1}>
@@ -504,8 +475,7 @@ function IssueActivity({ issues }) {
                 <Text
                   mt={0.5}
                   fontSize="10px"
-                  color="gray.500"
-                  _dark={{ color: "whiteAlpha.500" }}
+                  color="textMuted"
                   noOfLines={1}
                 >
                   {issue.key} · {issue.assignee || "Unassigned"}
@@ -533,35 +503,27 @@ function IssueActivity({ issues }) {
 /**
  * Workspace overview built with mock data for the approved design-system stage.
  *
- * @param {{ projects?: Array, boards?: Array, issues?: Array, notifications?: Array }} props
+ * @param {{ projects?: Array, issues?: Array, channels?: Array, notifications?: Array }} props
  */
 export function DashboardPage({
   projects = [],
-  boards = [],
   issues = [],
+  channels = [],
   notifications = [],
 }) {
   const openIssues = issues.filter((issue) => issue.status !== "done");
-  const boardCards = boards.reduce(
-    (total, board) => total + (board.cardCount || 0),
-    0,
-  );
-  const activeMembers = Math.max(
-    0,
-    ...projects.map((project) => project.memberCount || 0),
-  );
+  const assignedIssues = issues.filter((issue) => issue.assignee).length;
+  const projectProgress = projects.length
+    ? Math.round(
+        projects.reduce((total, project) => total + (project.progress || 0), 0) /
+          projects.length,
+      )
+    : 0;
   const unreadNotifications = notifications.filter(
     (notification) => !notification.read,
   ).length;
 
   const metrics = [
-    {
-      label: "Active projects",
-      value: projects.length,
-      caption: "Across this workspace",
-      icon: FolderKanban,
-      trend: 12,
-    },
     {
       label: "Open issues",
       value: openIssues.length,
@@ -570,18 +532,25 @@ export function DashboardPage({
       trend: -4,
     },
     {
-      label: "Board items",
-      value: boardCards,
-      caption: "Across all boards",
-      icon: Kanban,
+      label: "Active channels",
+      value: channels.length,
+      caption: "Workspace conversations",
+      icon: Hash,
       trend: 8,
     },
     {
-      label: "Team members",
-      value: activeMembers,
+      label: "Assigned issues",
+      value: assignedIssues,
       caption: `${unreadNotifications} unread updates`,
       icon: Users,
       trend: 6,
+    },
+    {
+      label: "Project progress",
+      value: `${projectProgress}%`,
+      caption: "Average across active projects",
+      icon: FolderKanban,
+      trend: 12,
     },
   ];
 
@@ -595,58 +564,56 @@ export function DashboardPage({
       >
         <Box>
           <Text
-            fontSize={{ base: "xl", md: "2xl" }}
+            fontSize={{ base: "2xl", md: "3xl" }}
             fontWeight="700"
             letterSpacing="-0.035em"
           >
             Workspace overview
           </Text>
-          <Text
-            mt={1}
-            fontSize="sm"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
-          >
-            A live look at projects, issues, and team activity.
-          </Text>
+          <HStack mt={2} spacing={2} color="textMuted">
+            <Box
+              aria-hidden="true"
+              w="7px"
+              h="7px"
+              borderRadius="full"
+              bg="success"
+              boxShadow="0 0 0 3px var(--success-soft)"
+            />
+            <Text fontSize="xs">Live · updated just now</Text>
+          </HStack>
         </Box>
         <Button
           leftIcon={<Plus size={15} />}
-          size="sm"
-          h="36px"
-          bg="amethyst.600"
-          color="white"
-          _hover={{ bg: "amethyst.700" }}
-          _active={{ bg: "amethyst.800" }}
-          borderRadius="9px"
+          variant="unstyled"
+          className="ui-button ui-button--primary"
+          h="40px"
           flexShrink={0}
         >
           Create project
         </Button>
       </HStack>
 
-      <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={3}>
+      <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
         {metrics.map((metric, index) => (
           <MetricCard key={metric.label} {...metric} index={index} />
         ))}
       </SimpleGrid>
 
-      <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={3}>
+      <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={4}>
         <Box gridColumn={{ base: "auto", lg: "span 2" }}>
           <ActivityChart />
         </Box>
         <ActivityHeatmap />
       </SimpleGrid>
 
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={3}>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
         <ProjectList projects={projects} />
         <IssueActivity issues={issues} />
       </SimpleGrid>
 
       <HStack
         spacing={2}
-        color="gray.500"
-        _dark={{ color: "whiteAlpha.500" }}
+        color="textMuted"
         fontSize="xs"
       >
         <Clock3 size={13} />

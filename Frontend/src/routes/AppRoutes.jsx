@@ -8,7 +8,6 @@ import LoginPage from "../features/auth/LoginPage.jsx";
 import RegisterPage from "../features/auth/RegisterPage.jsx";
 import {
   mockProjects,
-  mockBoards,
   mockIssues,
   mockChannels,
   mockNotifications,
@@ -64,7 +63,6 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <DashboardPage
               projects={mockProjects}
-              boards={mockBoards}
               issues={mockIssues}
               channels={mockChannels}
               notifications={mockNotifications}
@@ -78,7 +76,6 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <DashboardPage
               projects={mockProjects}
-              boards={mockBoards}
               issues={mockIssues}
               channels={mockChannels}
               notifications={mockNotifications}

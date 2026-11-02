@@ -23,11 +23,12 @@ export function MainLayout({ children, className = "", ...props }) {
   const [contextDrawerOpen, setContextDrawerOpen] = useState(false);
 
   const isMobile = useBreakpointValue({ base: true, md: false }) ?? true;
-  const isCompact = useBreakpointValue({ base: true, xl: false }) ?? true;
+  const isCompact = useBreakpointValue({ base: true, md: false }) ?? true;
+  const showContextPanel = useBreakpointValue({ base: false, xl: true }) ?? false;
   const collapsed = sidebarCollapsed || isCompact;
 
   const toggleContext = () => {
-    if (isCompact) {
+    if (!showContextPanel) {
       setContextDrawerOpen(true);
       return;
     }
@@ -48,7 +49,7 @@ export function MainLayout({ children, className = "", ...props }) {
         <Box
           as="aside"
           className="app-sidebar border-r"
-          w={collapsed ? "68px" : "228px"}
+          w={collapsed ? "68px" : "240px"}
           h="100%"
           flexShrink={0}
           overflow="hidden"
@@ -89,7 +90,7 @@ export function MainLayout({ children, className = "", ...props }) {
             {children}
           </Box>
 
-          {!isCompact && contextOpen && (
+          {showContextPanel && contextOpen && (
             <Box
               as="aside"
               className="app-sidebar border-l"
@@ -121,7 +122,7 @@ export function MainLayout({ children, className = "", ...props }) {
         </Drawer>
       )}
 
-      {isCompact && (
+      {!showContextPanel && (
         <Drawer
           isOpen={contextDrawerOpen}
           onClose={() => setContextDrawerOpen(false)}

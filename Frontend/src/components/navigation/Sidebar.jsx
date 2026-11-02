@@ -1,4 +1,5 @@
-import { Box, Button, Text, Tooltip } from "@chakra-ui/react";
+import { Box, Button, IconButton, Text, Tooltip } from "@chakra-ui/react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -27,19 +28,25 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Communication",
+    label: "Channels",
     items: [
       { label: "Channels", icon: Hash, to: "/channels" },
       { label: "Direct messages", icon: MessageSquare, to: "/dm" },
     ],
   },
   {
-    label: "Work",
+    label: "Projects",
     items: [
       { label: "Projects", icon: FolderKanban, to: "/projects" },
-      { label: "Boards", icon: Kanban, to: "/boards" },
-      { label: "Issues", icon: Bug, to: "/issues" },
     ],
+  },
+  {
+    label: "Boards",
+    items: [{ label: "Boards", icon: Kanban, to: "/boards" }],
+  },
+  {
+    label: "Issues",
+    items: [{ label: "Issues", icon: Bug, to: "/issues" }],
   },
   {
     label: "Account",
@@ -63,6 +70,7 @@ export function Sidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   const isActive = (to) =>
     (to === "/dashboard" && location.pathname === "/") ||
@@ -84,7 +92,7 @@ export function Sidebar({
       <Box
         display="flex"
         alignItems="center"
-        justifyContent={collapsed ? "center" : "space-between"}
+        justifyContent="space-between"
         px={collapsed ? 2 : 4}
         pb={5}
         minH="54px"
@@ -98,7 +106,7 @@ export function Sidebar({
             h="32px"
             flexShrink={0}
             borderRadius="10px"
-            bg="amethyst.600"
+            bg="accent"
             color="white"
             fontSize="sm"
             fontWeight="800"
@@ -120,18 +128,18 @@ export function Sidebar({
             </Box>
           )}
         </Box>
-        {!collapsed && (
-          <Button
-            aria-label="Select workspace"
+        {onCollapse && (
+          <IconButton
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            icon={collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             variant="ghost"
             size="xs"
-            minW="7"
-            px={1}
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.600" }}
-          >
-            <ChevronDown size={15} />
-          </Button>
+            minW="28px"
+            h="28px"
+            color="textMuted"
+            onClick={onCollapse}
+            className="sidebar-collapse-button"
+          />
         )}
       </Box>
 
@@ -143,26 +151,22 @@ export function Sidebar({
             justifyContent="flex-start"
             gap={2}
             variant="outline"
-            borderColor="blackAlpha.200"
-            color="gray.600"
+            borderColor="borderSubtle"
+            color="textSecondary"
+            bg="surface"
             fontSize="xs"
             fontWeight="500"
-            _dark={{
-              borderColor: "whiteAlpha.200",
-              color: "whiteAlpha.700",
-              bg: "whiteAlpha.50",
-            }}
             _hover={{
-              borderColor: "amethyst.400",
-              color: "amethyst.700",
-              _dark: { color: "amethyst.200" },
+              borderColor: "accentBorder",
+              color: "textPrimary",
+              bg: "surfaceRaised",
             }}
           >
             <Search size={14} />
             <Text flex={1} textAlign="left">
               Quick search
             </Text>
-            <Text fontSize="10px" color="gray.400">
+            <Text fontSize="10px" color="textMuted">
               Ctrl K
             </Text>
           </Button>
@@ -177,11 +181,10 @@ export function Sidebar({
             justifyContent="flex-start"
             gap={2}
             variant="ghost"
-            color="amethyst.700"
+            color="accent"
             fontSize="sm"
             fontWeight="600"
-            _dark={{ color: "amethyst.300" }}
-            _hover={{ bg: "amethyst.100", _dark: { bg: "whiteAlpha.100" } }}
+            _hover={{ bg: "accentSoft", color: "accentHot" }}
           >
             <Plus size={15} />
             Create new
@@ -202,20 +205,42 @@ export function Sidebar({
         {NAV_GROUPS.map((group) => (
           <Box key={group.label} mb={4}>
             {!collapsed && (
+              <Button
+              type="button"
+              variant="ghost"
+              w="full"
+              h="26px"
+              justifyContent="space-between"
+              px={2}
+              mb={1}
+              color="textMuted"
+              _hover={{ color: "textSecondary", bg: "transparent" }}
+              aria-expanded={expandedGroups[group.label] !== false}
+              onClick={() =>
+                setExpandedGroups((groups) => ({
+                  ...groups,
+                  [group.label]: groups[group.label] === false,
+                }))
+              }
+              >
               <Text
-                px={2}
-                pb={1.5}
                 fontSize="10px"
                 fontWeight="700"
-                letterSpacing="0.11em"
+                letterSpacing="0.12em"
                 textTransform="uppercase"
-                color="gray.500"
-                _dark={{ color: "whiteAlpha.500" }}
               >
                 {group.label}
               </Text>
+              <ChevronDown
+                size={13}
+                className={`transition-transform duration-150 ${
+                  expandedGroups[group.label] === false ? "-rotate-90" : ""
+                }`}
+              />
+              </Button>
             )}
-            <Box display="flex" flexDirection="column" gap={0.5}>
+            {(!collapsed && expandedGroups[group.label] === false) ? null : (
+            <Box display="flex" flexDirection="column" gap={1}>
               {group.items.map((item) => {
                 const active = isActive(item.to);
                 const ItemIcon = item.icon;
@@ -228,27 +253,24 @@ export function Sidebar({
                   >
                     <Button
                       aria-current={active ? "page" : undefined}
+                      data-active={active}
+                      className="ui-nav-item"
                       variant="ghost"
                       size="sm"
                       w="full"
-                      h="34px"
-                      px={collapsed ? 0 : 2}
+                      h="40px"
+                      px={collapsed ? 0 : 2.5}
                       justifyContent={collapsed ? "center" : "flex-start"}
                       gap={2.5}
-                      borderRadius="8px"
-                      color={active ? "amethyst.700" : "gray.600"}
-                      bg={active ? "amethyst.100" : "transparent"}
-                      _dark={{
-                        color: active ? "amethyst.200" : "whiteAlpha.700",
-                        bg: active ? "amethyst.900" : "transparent",
-                      }}
+                      borderRadius="control"
+                      color={active ? "primary" : "secondary"}
+                      bg={active ? "accentSoft" : "transparent"}
+                      border={active ? "1px solid" : "1px solid transparent"}
+                      borderColor={active ? "accentBorder" : "transparent"}
+                      position="relative"
                       _hover={{
-                        bg: active ? "amethyst.100" : "blackAlpha.50",
-                        color: active ? "amethyst.800" : "gray.900",
-                        _dark: {
-                          bg: active ? "amethyst.900" : "whiteAlpha.100",
-                          color: "white",
-                        },
+                        bg: active ? "accentSoft" : "surfaceRaised",
+                        color: "primary",
                       }}
                       onClick={() => navigateTo(item.to)}
                     >
@@ -257,7 +279,7 @@ export function Sidebar({
                         <Text
                           flex={1}
                           textAlign="left"
-                          fontSize="xs"
+                          fontSize="13px"
                           fontWeight={active ? "600" : "500"}
                           noOfLines={1}
                         >
@@ -269,44 +291,11 @@ export function Sidebar({
                 );
               })}
             </Box>
+            )}
           </Box>
         ))}
       </Box>
 
-      {onCollapse && (
-        <Box
-          borderTop="1px solid"
-          borderColor="blackAlpha.100"
-          _dark={{ borderColor: "whiteAlpha.100" }}
-          px={2}
-          pt={2}
-        >
-          <Button
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            variant="ghost"
-            size="sm"
-            w="full"
-            h="34px"
-            justifyContent={collapsed ? "center" : "flex-start"}
-            gap={2.5}
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.600" }}
-            _hover={{ bg: "blackAlpha.50", _dark: { bg: "whiteAlpha.100" } }}
-            onClick={onCollapse}
-          >
-            {collapsed ? (
-              <ChevronsRight size={16} />
-            ) : (
-              <ChevronsLeft size={16} />
-            )}
-            {!collapsed && (
-              <Text fontSize="xs" fontWeight="500">
-                Collapse sidebar
-              </Text>
-            )}
-          </Button>
-        </Box>
-      )}
     </Box>
   );
 }

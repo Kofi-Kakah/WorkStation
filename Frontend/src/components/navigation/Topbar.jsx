@@ -7,6 +7,7 @@ import {
   Tooltip,
 } from "@chakra-ui/react";
 import {
+  Home,
   Bell,
   ChevronRight,
   Command,
@@ -55,7 +56,7 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
       alignItems="center"
       justifyContent="space-between"
       gap={4}
-      h="58px"
+      h="56px"
       px={{ base: 3, md: 5, xl: 6 }}
       flexShrink={0}
     >
@@ -68,11 +69,15 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           onClick={onMenu}
         />
         <Box display="flex" alignItems="center" gap={2} minW="0">
+          <Home
+            size={15}
+            className="shrink-0 text-muted"
+            aria-hidden="true"
+          />
           <Text
             display={{ base: "none", sm: "block" }}
             fontSize="xs"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.500" }}
+            color="textMuted"
             noOfLines={1}
           >
             Workspace
@@ -85,8 +90,7 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           <Text
             fontSize="sm"
             fontWeight="600"
-            color="gray.800"
-            _dark={{ color: "whiteAlpha.900" }}
+            color="textPrimary"
             noOfLines={1}
           >
             {pageTitle}
@@ -104,18 +108,14 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           px={{ base: 2, sm: 3 }}
           justifyContent="flex-start"
           gap={2}
-          color="gray.500"
-          borderColor="blackAlpha.200"
+          color="textSecondary"
+          borderColor="borderSubtle"
+          bg="surface"
           fontWeight="400"
-          _dark={{
-            color: "whiteAlpha.600",
-            borderColor: "whiteAlpha.200",
-            bg: "whiteAlpha.50",
-          }}
           _hover={{
-            borderColor: "amethyst.400",
-            bg: "amethyst.50",
-            _dark: { bg: "whiteAlpha.100" },
+            borderColor: "accentBorder",
+            bg: "surfaceRaised",
+            color: "textPrimary",
           }}
           onClick={() => navigate("/search")}
         >
@@ -126,7 +126,7 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           <HStack
             display={{ base: "none", lg: "flex" }}
             spacing={0.5}
-            color="gray.400"
+            color="textMuted"
             fontSize="10px"
           >
             <Command size={11} />
@@ -152,10 +152,9 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
               w="6px"
               h="6px"
               borderRadius="full"
-              bg="amethyst.500"
+              bg="danger"
               border="1px solid"
-              borderColor="white"
-              _dark={{ borderColor: "#101012" }}
+              borderColor="base"
             />
           </Box>
         </Tooltip>
@@ -181,8 +180,7 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           p="2px"
           borderRadius="full"
           border="1px solid"
-          borderColor="amethyst.300"
-          _dark={{ borderColor: "amethyst.700" }}
+          borderColor="accentBorder"
           cursor="pointer"
           onClick={() => navigate("/profile")}
         >
