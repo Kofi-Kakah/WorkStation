@@ -13,6 +13,7 @@ import ProjectsPage from "../features/projects/ProjectsPage.jsx";
 import ProjectDetailPage from "../features/projects/ProjectDetailPage.jsx";
 import InvitationResponsePage from "../features/workspace/InvitationResponsePage.jsx";
 import ChatPage from "../features/chat/ChatPage.jsx";
+import IssuesPage from "../features/issues/IssuesPage.jsx";
 import {
   mockProjects,
   mockIssues,
@@ -87,6 +88,22 @@ export default function AppRoutes() {
             >
               <BoardsPage />
             </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/issues"
+        element={
+          <ProtectedRoute>
+            <IssuesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/issues/:issueId"
+        element={
+          <ProtectedRoute>
+            <IssuesPage />
           </ProtectedRoute>
         }
       />
