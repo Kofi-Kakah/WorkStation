@@ -15,7 +15,15 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Save, UserMinus, Users } from "lucide-react";
+import {
+  Building2,
+  Copy,
+  Plus,
+  Save,
+  UserMinus,
+  Users,
+  UserPlus,
+} from "lucide-react";
 import Button from "../../components/ui/Button.jsx";
 import Card from "../../components/ui/Card.jsx";
 import { api } from "../../services/apiClient.js";
@@ -49,6 +57,10 @@ export default function WorkspaceSettingsPage() {
           description: activeWorkspace?.description || "",
         };
   const [createForm, setCreateForm] = useState({ name: "", description: "" });
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviteLink, setInviteLink] = useState("");
+  const [inviteBusy, setInviteBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -72,6 +84,20 @@ export default function WorkspaceSettingsPage() {
         `/workspaces/${activeWorkspace.id}/members`,
       );
       return response.members || [];
+    },
+  });
+  const {
+    data: invitations = [],
+    error: invitationsError,
+    refetch: refetchInvitations,
+  } = useQuery({
+    queryKey: ["workspace", activeWorkspace?.id, "invitations"],
+    enabled: Boolean(activeWorkspace?.id && canEdit),
+    queryFn: async () => {
+      const response = await api.get(
+        `/workspaces/${activeWorkspace.id}/invitations`,
+      );
+      return response.invitations || [];
     },
   });
 
@@ -125,6 +151,39 @@ export default function WorkspaceSettingsPage() {
       setNotice("Member role updated.");
     } catch (error) {
       setPageError(error.message || "Unable to update the member role.");
+    }
+  };
+
+  const handleInvite = async (event) => {
+    event.preventDefault();
+    setInviteBusy(true);
+    setPageError("");
+    setNotice("");
+    setInviteLink("");
+    try {
+      const response = await api.post(
+        `/workspaces/${activeWorkspace.id}/invitations`,
+        { email: inviteEmail, role: inviteRole },
+      );
+      setInviteLink(
+        `${window.location.origin}/invitations/${response.invitation.token}`,
+      );
+      setInviteEmail("");
+      await refetchInvitations();
+      setNotice("Invitation created. Share the link with your teammate.");
+    } catch (requestError) {
+      setPageError(requestError.message || "Unable to create the invitation.");
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setNotice("Invitation link copied.");
+    } catch (copyError) {
+      setPageError(copyError.message || "Unable to copy the invitation link.");
     }
   };
 
@@ -191,10 +250,13 @@ export default function WorkspaceSettingsPage() {
         )}
       </HStack>
 
-      {(workspaceError || pageError || membersError) && (
+      {(workspaceError || pageError || membersError || invitationsError) && (
         <Alert status="error" borderRadius="control" bg="surface">
           <AlertIcon />
-          {pageError || workspaceError || membersError?.message}
+          {pageError ||
+            workspaceError ||
+            membersError?.message ||
+            invitationsError?.message}
         </Alert>
       )}
       {notice && (
@@ -327,6 +389,120 @@ export default function WorkspaceSettingsPage() {
               </VStack>
             </form>
           </Card>
+
+          {canEdit && (
+            <Card className="p-5 sm:p-6">
+              <HStack mb={5} spacing={3}>
+                <UserPlus size={18} color="var(--accent)" />
+                <Box>
+                  <Heading size="sm">Invite teammates</Heading>
+                  <Text mt={1} color="textMuted" fontSize="xs">
+                    Create a seven-day invitation link for a verified email.
+                  </Text>
+                </Box>
+              </HStack>
+              <form onSubmit={handleInvite}>
+                <VStack align="stretch" spacing={4}>
+                  <HStack align="flex-end" flexWrap="wrap" spacing={3}>
+                    <FormControl isRequired flex={1} minW="220px">
+                      <FormLabel fontSize="sm">Email address</FormLabel>
+                      <Input
+                        type="email"
+                        autoComplete="email"
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        maxLength={254}
+                        placeholder="teammate@example.com"
+                      />
+                    </FormControl>
+                    <FormControl w={{ base: "full", sm: "200px" }}>
+                      <FormLabel fontSize="sm">Workspace role</FormLabel>
+                      <Select
+                        value={inviteRole}
+                        onChange={(event) => setInviteRole(event.target.value)}
+                      >
+                        <option value="project_manager">Project manager</option>
+                        <option value="member">Member</option>
+                        <option value="guest">Guest</option>
+                      </Select>
+                    </FormControl>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      leftIcon={<UserPlus size={15} />}
+                      isLoading={inviteBusy}
+                      minH="40px"
+                    >
+                      Create invitation
+                    </Button>
+                  </HStack>
+                  {inviteLink && (
+                    <HStack align="stretch" flexWrap="wrap" spacing={2}>
+                      <Input
+                        aria-label="Invitation link"
+                        value={inviteLink}
+                        isReadOnly
+                        flex={1}
+                        minW="220px"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        leftIcon={<Copy size={14} />}
+                        onClick={copyInviteLink}
+                      >
+                        Copy link
+                      </Button>
+                    </HStack>
+                  )}
+                </VStack>
+              </form>
+
+              {invitations.length > 0 && (
+                <VStack align="stretch" spacing={2} mt={6}>
+                  <Text
+                    color="textMuted"
+                    fontSize="xs"
+                    fontWeight="700"
+                    letterSpacing="0.1em"
+                    textTransform="uppercase"
+                  >
+                    Pending invitations
+                  </Text>
+                  {invitations.map((invitation) => (
+                    <HStack
+                      key={invitation.id}
+                      justify="space-between"
+                      p={3}
+                      border="1px solid"
+                      borderColor="borderSubtle"
+                      borderRadius="control"
+                    >
+                      <Box minW="0">
+                        <Text fontSize="sm" fontWeight="600" noOfLines={1}>
+                          {invitation.email}
+                        </Text>
+                        <Text color="textMuted" fontSize="xs" textTransform="capitalize">
+                          {invitation.role.replace("_", " ")}
+                        </Text>
+                      </Box>
+                      <Text
+                        flexShrink={0}
+                        px={2}
+                        py={1}
+                        bg="accentSoft"
+                        color="accent"
+                        borderRadius="full"
+                        fontSize="10px"
+                      >
+                        Pending
+                      </Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              )}
+            </Card>
+          )}
 
           <Card className="p-5 sm:p-6">
             <HStack justify="space-between" mb={5}>

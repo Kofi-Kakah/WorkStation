@@ -8,6 +8,9 @@ import LoginPage from "../features/auth/LoginPage.jsx";
 import RegisterPage from "../features/auth/RegisterPage.jsx";
 import WorkspaceSettingsPage from "../features/workspace/WorkspaceSettingsPage.jsx";
 import ProfilePage from "../features/profile/ProfilePage.jsx";
+import ProjectsPage from "../features/projects/ProjectsPage.jsx";
+import ProjectDetailPage from "../features/projects/ProjectDetailPage.jsx";
+import InvitationResponsePage from "../features/workspace/InvitationResponsePage.jsx";
 import {
   mockProjects,
   mockIssues,
@@ -51,6 +54,30 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/invitations/:token"
+        element={
+          <ProtectedRoute>
+            <InvitationResponsePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId"
+        element={
+          <ProtectedRoute>
+            <ProjectDetailPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/workspace"
         element={

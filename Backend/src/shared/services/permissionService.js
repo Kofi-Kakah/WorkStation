@@ -55,6 +55,18 @@ export function canManageMemberRole(actorRole, targetRole) {
   return actorRole === ROLES.OWNER || targetRole !== ROLES.ADMIN;
 }
 
+export function canCreateProject(workspaceRole) {
+  return roleAtLeast(workspaceRole, ROLES.PROJECT_MANAGER);
+}
+
+export function canManageProject(workspaceRole, projectRole) {
+  return canManageWorkspace(workspaceRole) || projectRole === ROLES.PROJECT_MANAGER;
+}
+
+export function canDeleteProject(workspaceRole) {
+  return canManageWorkspace(workspaceRole);
+}
+
 export default {
   ROLES,
   ROLE_HIERARCHY,
@@ -62,4 +74,7 @@ export default {
   PERMISSIONS,
   canManageWorkspace,
   canManageMemberRole,
+  canCreateProject,
+  canManageProject,
+  canDeleteProject,
 };

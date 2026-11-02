@@ -619,6 +619,7 @@ export function DashboardPage({
           className="ui-button ui-button--primary"
           h="40px"
           flexShrink={0}
+          onClick={() => navigate("/projects")}
         >
           Create project
         </Button>

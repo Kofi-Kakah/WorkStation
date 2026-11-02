@@ -31,3 +31,12 @@ export const updateMemberRoleSchema = z.object({
     ROLES.GUEST,
   ]),
 });
+
+export const createInvitationSchema = z.object({
+  email: z.string().trim().email().max(254),
+  role: z.enum([
+    ROLES.PROJECT_MANAGER,
+    ROLES.MEMBER,
+    ROLES.GUEST,
+  ]).default(ROLES.MEMBER),
+});
