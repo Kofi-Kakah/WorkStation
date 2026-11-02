@@ -42,10 +42,11 @@ import {
   Search,
   Send,
   Smile,
+  ClipboardPlus,
   Users,
   X,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button.jsx";
 import Card from "../../components/ui/Card.jsx";
 import { useAuth } from "../../contexts/useAuth.jsx";
@@ -90,6 +91,8 @@ function MessageItem({
   onEdit,
   onDelete,
   onReact,
+  onConvert,
+  onOpenIssue,
   readByCount = 0,
 }) {
   const [reactionMenu, setReactionMenu] = useState(false);
@@ -134,6 +137,25 @@ function MessageItem({
           >
             {message.isDeleted ? "This message was deleted." : message.content}
           </Text>
+          {message.linkedIssueId && (
+            <Badge
+              as="button"
+              type="button"
+              mt={2}
+              px={2}
+              py={1}
+              border="1px solid"
+              borderColor="accentBorder"
+              borderRadius="full"
+              bg="accentSoft"
+              color="accentHot"
+              cursor="pointer"
+              onClick={() => onOpenIssue?.(message.linkedIssueId)}
+              _hover={{ bg: "surfaceRaised" }}
+            >
+              {message.linkedIssueKey || "Open linked issue"}
+            </Badge>
+          )}
           {isMine && readByCount > 0 && (
             <Text mt={1} color="textMuted" fontSize="10px">
               Seen by {readByCount}
@@ -251,6 +273,18 @@ function MessageItem({
                 onClick={() => setReactionMenu((open) => !open)}
               />
             </Tooltip>
+            {!message.linkedIssueId && onConvert && (
+              <Tooltip label="Convert to issue">
+                <IconButton
+                  aria-label="Convert message to issue"
+                  icon={<ClipboardPlus size={15} />}
+                  size="xs"
+                  variant="ghost"
+                  color="textMuted"
+                  onClick={() => onConvert(message)}
+                />
+              </Tooltip>
+            )}
             {isMine && (
               <>
                 <Tooltip label="Edit message">
@@ -559,6 +593,7 @@ export default function ChatPage() {
   const { activeWorkspace, user } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
+  const navigate = useNavigate();
   const isDirectRoute = location.pathname.startsWith("/dm");
   const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
   const scopeKey = `${activeWorkspace?.id || ""}:${isDirectRoute ? "dm" : "channel"}`;
@@ -590,6 +625,15 @@ export default function ChatPage() {
   const [jumpTargetId, setJumpTargetId] = useState("");
   const channelDialog = useDisclosure();
   const conversationDialog = useDisclosure();
+  const conversionDialog = useDisclosure();
+  const [conversionMessage, setConversionMessage] = useState(null);
+  const [conversionForm, setConversionForm] = useState({
+    projectId: "",
+    title: "",
+    description: "",
+    type: "task",
+    priority: "medium",
+  });
   const [channelForm, setChannelForm] = useState({
     name: "",
     topic: "",
@@ -636,6 +680,16 @@ export default function ChatPage() {
     queryFn: async () => {
       const response = await api.get(`/workspaces/${activeWorkspace.id}/members`);
       return response.members || [];
+    },
+  });
+  const projectsQuery = useQuery({
+    queryKey: ["projects", activeWorkspace?.id],
+    enabled: Boolean(activeWorkspace?.id),
+    queryFn: async () => {
+      const response = await api.get(
+        `/projects?workspaceId=${encodeURIComponent(activeWorkspace.id)}`,
+      );
+      return response.projects || [];
     },
   });
 
@@ -894,6 +948,57 @@ export default function ChatPage() {
     },
     onError: (error) => setFormError(error.message || "Message could not be updated."),
   });
+
+  const convertMessageMutation = useMutation({
+    mutationFn: async () => {
+      if (!selected?.id || !conversionMessage) {
+        throw new Error("Select a message and conversation before converting.");
+      }
+      return api.post(
+        `/integrations/messages/${conversionMessage.id}/convert-to-issue`,
+        {
+          channelId: selected.id,
+          projectId: conversionForm.projectId,
+          title: conversionForm.title.trim(),
+          description: conversionForm.description.trim(),
+          type: conversionForm.type,
+          priority: conversionForm.priority,
+        },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["messages", selected?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["issues"] }),
+      ]);
+      conversionDialog.onClose();
+      setConversionMessage(null);
+      setFormError("");
+    },
+    onError: (error) =>
+      setFormError(error.message || "Message could not be converted to an issue."),
+  });
+
+  const beginIssueConversion = (message) => {
+    convertMessageMutation.reset();
+    setConversionMessage(message);
+    setConversionForm({
+      projectId: projectsQuery.data?.[0]?.id || "",
+      title: message.content || "",
+      description: message.content || "",
+      type: "task",
+      priority: "medium",
+    });
+    conversionDialog.onOpen();
+  };
+
+  const submitIssueConversion = (event) => {
+    event.preventDefault();
+    if (!conversionForm.projectId || !conversionForm.title.trim()) return;
+    convertMessageMutation.mutate();
+  };
+
+  const openLinkedIssue = (issueId) => navigate(`/issues/${issueId}`);
 
   const deleteMessage = async (message) => {
     if (!window.confirm("Delete this message?")) return;
@@ -1419,6 +1524,8 @@ export default function ChatPage() {
                                 }}
                                 onDelete={deleteMessage}
                                 onReact={toggleReaction}
+                                onConvert={beginIssueConversion}
+                                onOpenIssue={openLinkedIssue}
                               />
                             )}
                           </Box>
@@ -1481,6 +1588,8 @@ export default function ChatPage() {
                           }}
                           onDelete={deleteMessage}
                           onReact={toggleReaction}
+                          onConvert={beginIssueConversion}
+                          onOpenIssue={openLinkedIssue}
                         />
                         <Divider my={2} />
                         {(threadQuery.data || []).map((message) => (
@@ -1510,6 +1619,8 @@ export default function ChatPage() {
                               }}
                               onDelete={deleteMessage}
                               onReact={toggleReaction}
+                              onConvert={beginIssueConversion}
+                              onOpenIssue={openLinkedIssue}
                             />
                           </Box>
                         ))}
@@ -1696,6 +1807,170 @@ export default function ChatPage() {
                 isLoading={createConversationMutation.isPending}
               >
                 Start conversation
+              </Button>
+            </ModalFooter>
+          </Box>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={conversionDialog.isOpen}
+        onClose={conversionDialog.onClose}
+        isCentered
+        size="lg"
+      >
+        <ModalOverlay backdropFilter="blur(8px)" />
+        <ModalContent bg="surface" border="1px solid" borderColor="borderSubtle">
+          <ModalHeader>Convert message to issue</ModalHeader>
+          <ModalCloseButton />
+          <Box as="form" onSubmit={submitIssueConversion}>
+            <ModalBody>
+              <VStack align="stretch" spacing={4}>
+                {convertMessageMutation.error && (
+                  <Alert status="error" borderRadius="control">
+                    <AlertIcon />
+                    {convertMessageMutation.error.message ||
+                      "Message could not be converted to an issue."}
+                  </Alert>
+                )}
+                <Box
+                  p={3}
+                  border="1px solid"
+                  borderColor="borderSubtle"
+                  borderRadius="control"
+                  bg="surfaceRaised"
+                >
+                  <Text
+                    color="textMuted"
+                    fontSize="xs"
+                    fontWeight="700"
+                    textTransform="uppercase"
+                  >
+                    From {selectedTitle}
+                  </Text>
+                  <Text mt={1} color="textSecondary" fontSize="sm" noOfLines={3}>
+                    {conversionMessage?.content}
+                  </Text>
+                </Box>
+                {projectsQuery.error && (
+                  <Alert status="error" borderRadius="control">
+                    <AlertIcon />
+                    {projectsQuery.error.message || "Projects could not be loaded."}
+                  </Alert>
+                )}
+                <FormControl isRequired>
+                  <FormLabel fontSize="sm">Project</FormLabel>
+                  <Select
+                    value={conversionForm.projectId}
+                    onChange={(event) =>
+                      setConversionForm((current) => ({
+                        ...current,
+                        projectId: event.target.value,
+                      }))
+                    }
+                    isDisabled={projectsQuery.isPending || !projectsQuery.data?.length}
+                  >
+                    {!projectsQuery.data?.length && (
+                      <option value="">
+                        {projectsQuery.isPending
+                          ? "Loading projects..."
+                          : "No available projects"}
+                      </option>
+                    )}
+                    {(projectsQuery.data || []).map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel fontSize="sm">Issue title</FormLabel>
+                  <Input
+                    value={conversionForm.title}
+                    onChange={(event) =>
+                      setConversionForm((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    maxLength={200}
+                    autoFocus
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel fontSize="sm">Description</FormLabel>
+                  <Textarea
+                    value={conversionForm.description}
+                    onChange={(event) =>
+                      setConversionForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    maxLength={5000}
+                    minH="110px"
+                  />
+                </FormControl>
+                <HStack align="start" spacing={3}>
+                  <FormControl>
+                    <FormLabel fontSize="sm">Type</FormLabel>
+                    <Select
+                      value={conversionForm.type}
+                      onChange={(event) =>
+                        setConversionForm((current) => ({
+                          ...current,
+                          type: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="task">Task</option>
+                      <option value="bug">Bug</option>
+                      <option value="story">Story</option>
+                      <option value="epic">Epic</option>
+                      <option value="subtask">Subtask</option>
+                    </Select>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel fontSize="sm">Priority</FormLabel>
+                    <Select
+                      value={conversionForm.priority}
+                      onChange={(event) =>
+                        setConversionForm((current) => ({
+                          ...current,
+                          priority: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="lowest">Lowest</option>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="highest">Highest</option>
+                    </Select>
+                  </FormControl>
+                </HStack>
+              </VStack>
+            </ModalBody>
+            <ModalFooter gap={2}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={conversionDialog.onClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={convertMessageMutation.isPending}
+                isDisabled={
+                  !conversionForm.projectId ||
+                  !conversionForm.title.trim() ||
+                  projectsQuery.isPending
+                }
+              >
+                Create issue
               </Button>
             </ModalFooter>
           </Box>

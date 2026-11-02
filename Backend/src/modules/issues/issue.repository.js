@@ -56,6 +56,10 @@ export default class IssueRepository {
     };
   }
 
+  getProjectAccessWithinTransaction(transaction, projectId, uid) {
+    return this._projectAccess(transaction, projectId, uid);
+  }
+
   async _issueAccess(transaction, issueId, uid) {
     const issueRef = this.db.collection(COLLECTION).doc(issueId);
     const issue = await transaction.get(issueRef);
@@ -138,59 +142,73 @@ export default class IssueRepository {
     return issues;
   }
 
-  async create(projectId, uid, input) {
+  async createWithinTransaction(
+    transaction,
+    projectId,
+    uid,
+    input,
+    { sourceMessage = null, projectAccess = null } = {},
+  ) {
     const issueId = generateId();
     const issueRef = this.db.collection(COLLECTION).doc(issueId);
     const timestamp = serverTimestamp();
 
-    return this.db.runTransaction(async (transaction) => {
-      const access = await this._projectAccess(transaction, projectId, uid);
-      const project = access.project;
-      const normalizedStatus = this._normalizeStatus(input.status);
-      const issueData = {
-        projectId,
-        workspaceId: project.workspaceId,
-        title: input.title.trim(),
-        description: input.description || "",
-        type: this._normalizeType(input.type),
-        status: normalizedStatus,
-        priority: this._normalizePriority(input.priority),
-        assigneeId: input.assigneeId || null,
-        reporterId: uid,
-        createdBy: uid,
-        labels: Array.isArray(input.labels) ? input.labels.slice(0, 25) : [],
-        dueDate: input.dueDate || null,
-        parentIssueId: input.parentIssueId || null,
-        relatedIssueIds: [],
-        issueKey: `${project.key || "PROJ"}-${issueId.slice(0, 6).toUpperCase()}`,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        resolvedAt: normalizedStatus === "done" ? timestamp : null,
-      };
+    const access =
+      projectAccess ||
+      (await this._projectAccess(transaction, projectId, uid));
+    const project = access.project;
+    const normalizedStatus = this._normalizeStatus(input.status);
+    const issueData = {
+      projectId,
+      workspaceId: project.workspaceId,
+      title: input.title.trim(),
+      description: input.description || "",
+      type: this._normalizeType(input.type),
+      status: normalizedStatus,
+      priority: this._normalizePriority(input.priority),
+      assigneeId: input.assigneeId || null,
+      reporterId: uid,
+      createdBy: uid,
+      labels: Array.isArray(input.labels) ? input.labels.slice(0, 25) : [],
+      dueDate: input.dueDate || null,
+      parentIssueId: input.parentIssueId || null,
+      relatedIssueIds: [],
+      sourceChannelId: sourceMessage?.channelId || null,
+      sourceMessageId: sourceMessage?.messageId || null,
+      issueKey: `${project.key || "PROJ"}-${issueId.slice(0, 6).toUpperCase()}`,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      resolvedAt: normalizedStatus === "done" ? timestamp : null,
+    };
 
-      if (issueData.assigneeId) {
-        const assigneeRef = this.db
-          .collection("projects")
-          .doc(projectId)
-          .collection("members")
-          .doc(issueData.assigneeId);
-        const assignee = await transaction.get(assigneeRef);
-        if (!assignee.exists) {
-          throw Errors.notFound("Assignee not found in this project");
-        }
+    if (issueData.assigneeId) {
+      const assigneeRef = this.db
+        .collection("projects")
+        .doc(projectId)
+        .collection("members")
+        .doc(issueData.assigneeId);
+      const assignee = await transaction.get(assigneeRef);
+      if (!assignee.exists) {
+        throw Errors.notFound("Assignee not found in this project");
       }
+    }
 
-      if (issueData.parentIssueId) {
-        const parentRef = this.db.collection(COLLECTION).doc(issueData.parentIssueId);
-        const parent = await transaction.get(parentRef);
-        if (!parent.exists || parent.get("projectId") !== projectId) {
-          throw Errors.notFound("Parent issue not found in this project");
-        }
+    if (issueData.parentIssueId) {
+      const parentRef = this.db.collection(COLLECTION).doc(issueData.parentIssueId);
+      const parent = await transaction.get(parentRef);
+      if (!parent.exists || parent.get("projectId") !== projectId) {
+        throw Errors.notFound("Parent issue not found in this project");
       }
+    }
 
-      transaction.create(issueRef, issueData);
-      return { id: issueId, ...issueData, currentUserProjectRole: access.projectRole };
-    });
+    transaction.create(issueRef, issueData);
+    return { id: issueId, ...issueData, currentUserProjectRole: access.projectRole };
+  }
+
+  async create(projectId, uid, input) {
+    return this.db.runTransaction((transaction) =>
+      this.createWithinTransaction(transaction, projectId, uid, input),
+    );
   }
 
   async get(issueId, uid) {

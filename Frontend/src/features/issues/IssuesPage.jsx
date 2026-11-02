@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   AlertIcon,
@@ -23,6 +23,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/ui/Button.jsx";
 import Card from "../../components/ui/Card.jsx";
 import { useAuth } from "../../contexts/useAuth.jsx";
@@ -68,11 +69,14 @@ function priorityColor(priority) {
 
 export default function IssuesPage() {
   const { activeWorkspace } = useAuth();
+  const { issueId: routeIssueId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedIssueId, setSelectedIssueId] = useState("");
+  const [localSelectedIssueId, setLocalSelectedIssueId] = useState("");
+  const selectedIssueId = routeIssueId || localSelectedIssueId;
   const [formState, setFormState] = useState({
     title: "",
     description: "",
@@ -80,6 +84,11 @@ export default function IssuesPage() {
     status: "todo",
     priority: "medium",
   });
+  const [editDraftState, setEditDraftState] = useState({
+    issueId: "",
+    values: null,
+  });
+  const [commentDraft, setCommentDraft] = useState("");
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects", activeWorkspace?.id],
@@ -89,12 +98,6 @@ export default function IssuesPage() {
       return response.projects || [];
     },
   });
-
-  useEffect(() => {
-    if (!selectedProjectId && projects[0]) {
-      setSelectedProjectId(projects[0].id);
-    }
-  }, [projects, selectedProjectId]);
 
   const projectId = selectedProjectId || projects[0]?.id || "";
 
@@ -122,6 +125,16 @@ export default function IssuesPage() {
       return response.issue;
     },
   });
+  const editDraft =
+    selectedIssue && editDraftState.issueId === selectedIssue.id
+      ? editDraftState.values
+      : {
+          title: selectedIssue?.title || "",
+          description: selectedIssue?.description || "",
+          type: selectedIssue?.type || "task",
+          status: selectedIssue?.status || "todo",
+          priority: selectedIssue?.priority || "medium",
+        };
 
   const { data: comments = [] } = useQuery({
     queryKey: ["issue-comments", selectedIssueId],
@@ -135,7 +148,7 @@ export default function IssuesPage() {
   const createIssueMutation = useMutation({
     mutationFn: async (payload) => api.post("/issues", payload),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["issues", projectId] });
+      await queryClient.invalidateQueries({ queryKey: ["issues"] });
       setFormState({
         title: "",
         description: "",
@@ -143,6 +156,34 @@ export default function IssuesPage() {
         status: "todo",
         priority: "medium",
       });
+    },
+  });
+
+  const updateIssueMutation = useMutation({
+    mutationFn: async ({ issueId, payload }) =>
+      api.patch(`/issues/${issueId}`, payload),
+    onSuccess: async () => {
+      setEditDraftState({ issueId: "", values: null });
+      await queryClient.invalidateQueries({ queryKey: ["issues"] });
+      if (selectedIssueId) {
+        await queryClient.invalidateQueries({ queryKey: ["issue", selectedIssueId] });
+        await queryClient.invalidateQueries({
+          queryKey: ["issue-comments", selectedIssueId],
+        });
+      }
+    },
+  });
+
+  const createCommentMutation = useMutation({
+    mutationFn: async ({ issueId, content }) =>
+      api.post(`/issues/${issueId}/comments`, { content }),
+    onSuccess: async () => {
+      if (selectedIssueId) {
+        await queryClient.invalidateQueries({
+          queryKey: ["issue-comments", selectedIssueId],
+        });
+      }
+      setCommentDraft("");
     },
   });
 
@@ -166,6 +207,69 @@ export default function IssuesPage() {
       type: formState.type,
       status: formState.status,
       priority: formState.priority,
+    });
+  };
+
+  const updateSelectedIssue = (event) => {
+    event.preventDefault();
+    if (!selectedIssueId || !selectedIssue) return;
+
+    const payload = {};
+    if (editDraft.title.trim() && editDraft.title !== selectedIssue.title) {
+      payload.title = editDraft.title.trim();
+    }
+    if (editDraft.description !== selectedIssue.description) {
+      payload.description = editDraft.description.trim();
+    }
+    if (editDraft.type && editDraft.type !== selectedIssue.type) {
+      payload.type = editDraft.type;
+    }
+    if (editDraft.status && editDraft.status !== selectedIssue.status) {
+      payload.status = editDraft.status;
+    }
+    if (editDraft.priority && editDraft.priority !== selectedIssue.priority) {
+      payload.priority = editDraft.priority;
+    }
+
+    if (!Object.keys(payload).length) return;
+    updateIssueMutation.mutate({ issueId: selectedIssueId, payload });
+  };
+
+  const updateEditDraftField = (field, value) => {
+    if (!selectedIssue) return;
+    setEditDraftState((current) => {
+      const currentValues =
+        current.issueId === selectedIssue.id && current.values
+          ? current.values
+          : {
+              title: selectedIssue.title || "",
+              description: selectedIssue.description || "",
+              type: selectedIssue.type || "task",
+              status: selectedIssue.status || "todo",
+              priority: selectedIssue.priority || "medium",
+            };
+      return {
+        issueId: selectedIssue.id,
+        values: { ...currentValues, [field]: value },
+      };
+    });
+  };
+
+  const selectIssue = (issueId) => {
+    if (routeIssueId) {
+      navigate(`/issues/${issueId}`, { replace: true });
+      return;
+    }
+    setLocalSelectedIssueId(issueId);
+  };
+
+  const submitComment = (event) => {
+    event.preventDefault();
+    if (!selectedIssueId || !commentDraft.trim()) return;
+
+    createCommentMutation.mutate({
+      issueId: selectedIssueId,
+      content: commentDraft.trim(),
     });
   };
 
@@ -245,7 +349,6 @@ export default function IssuesPage() {
                   placeholder="Search issues"
                   size="sm"
                   maxW="220px"
-                  leftElement={<Search size={14} />}
                 />
                 <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} size="sm" maxW="180px">
                   <option value="all">All states</option>
@@ -284,7 +387,7 @@ export default function IssuesPage() {
                   key={issue.id}
                   as="button"
                   type="button"
-                  onClick={() => setSelectedIssueId(issue.id)}
+                  onClick={() => selectIssue(issue.id)}
                   textAlign="left"
                   border="1px solid"
                   borderColor={selectedIssueId === issue.id ? "accentBorder" : "borderSubtle"}
@@ -435,8 +538,115 @@ export default function IssuesPage() {
 
               <Text color="textSecondary" mt={3}>{selectedIssue.description || "No description added yet."}</Text>
 
+              <Box mt={5} as="form" onSubmit={updateSelectedIssue}>
+                <Text fontWeight="700" mb={3}>Update issue</Text>
+                <VStack align="stretch" spacing={3}>
+                  <FormControl>
+                    <FormLabel fontSize="sm">Title</FormLabel>
+                    <Input
+                      value={editDraft.title}
+                      onChange={(event) =>
+                        updateEditDraftField("title", event.target.value)
+                      }
+                    />
+                  </FormControl>
+
+                  <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={3}>
+                    <FormControl>
+                      <FormLabel fontSize="sm">Type</FormLabel>
+                      <Select
+                        value={editDraft.type}
+                        onChange={(event) =>
+                          updateEditDraftField("type", event.target.value)
+                        }
+                      >
+                        {ISSUE_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel fontSize="sm">Status</FormLabel>
+                      <Select
+                        value={editDraft.status}
+                        onChange={(event) =>
+                          updateEditDraftField("status", event.target.value)
+                        }
+                      >
+                        {ISSUE_STATUS.map((status) => (
+                          <option key={status.value} value={status.value}>
+                            {status.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel fontSize="sm">Priority</FormLabel>
+                      <Select
+                        value={editDraft.priority}
+                        onChange={(event) =>
+                          updateEditDraftField("priority", event.target.value)
+                        }
+                      >
+                        {ISSUE_PRIORITIES.map((priority) => (
+                          <option key={priority.value} value={priority.value}>
+                            {priority.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </SimpleGrid>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm">Description</FormLabel>
+                    <Textarea
+                      value={editDraft.description}
+                      onChange={(event) =>
+                        updateEditDraftField("description", event.target.value)
+                      }
+                      minH="120px"
+                    />
+                  </FormControl>
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isLoading={updateIssueMutation.isPending}
+                    loadingText="Saving"
+                    alignSelf="flex-end"
+                  >
+                    Save changes
+                  </Button>
+                </VStack>
+              </Box>
+
+              <Box mt={5} as="form" onSubmit={submitComment}>
+                <Text fontWeight="700" mb={2}>Add comment</Text>
+                <VStack align="stretch" spacing={2}>
+                  <Textarea
+                    value={commentDraft}
+                    onChange={(event) => setCommentDraft(event.target.value)}
+                    placeholder="Add a progress update or context..."
+                    minH="96px"
+                  />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isLoading={createCommentMutation.isPending}
+                    loadingText="Posting"
+                    alignSelf="flex-end"
+                  >
+                    Post comment
+                  </Button>
+                </VStack>
+              </Box>
+
               {comments.length > 0 && (
-                <Box mt={4}>
+                <Box mt={5}>
                   <Text fontWeight="700" mb={2}>Comments</Text>
                   <VStack align="stretch" spacing={2}>
                     {comments.map((comment) => (

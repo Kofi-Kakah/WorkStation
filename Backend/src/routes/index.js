@@ -10,6 +10,7 @@ import messageRoutes from "../modules/messages/message.routes.js";
 import attachmentRoutes from "../modules/attachments/attachment.routes.js";
 import boardRoutes from "../modules/boards/board.routes.js";
 import issueRoutes from "../modules/issues/issue.routes.js";
+import integrationRoutes from "../modules/integrations/integration.routes.js";
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use("/channels", attachmentRoutes);
 router.use("/messages", messageRoutes);
 router.use("/boards", boardRoutes);
 router.use("/issues", issueRoutes);
+router.use("/integrations", integrationRoutes);
 
 export default router;
