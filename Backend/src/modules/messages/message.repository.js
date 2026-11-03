@@ -6,6 +6,9 @@ import ChannelRepository from "../channels/channel.repository.js";
 import AttachmentRepository from "../attachments/attachment.repository.js";
 import NotificationService from "../../shared/services/notificationService.js";
 
+const WORKSPACE_MESSAGE_SEARCH_SCAN_LIMIT = 100;
+const CONVERSATION_MESSAGE_SEARCH_SCAN_LIMIT = 500;
+
 function timestampMillis(timestamp) {
   if (typeof timestamp?.toMillis === "function") return timestamp.toMillis();
   if (timestamp instanceof Date) return timestamp.getTime();
@@ -371,6 +374,27 @@ export default class MessageRepository {
   }
 
   async search(channelId, uid, queryText, limit) {
+    const result = await this._search(
+      channelId,
+      uid,
+      queryText,
+      limit,
+      CONVERSATION_MESSAGE_SEARCH_SCAN_LIMIT,
+    );
+    return result.messages;
+  }
+
+  async searchRecent(channelId, uid, queryText, limit) {
+    return this._search(
+      channelId,
+      uid,
+      queryText,
+      limit,
+      WORKSPACE_MESSAGE_SEARCH_SCAN_LIMIT,
+    );
+  }
+
+  async _search(channelId, uid, queryText, limit, scanLimit) {
     const { channelRef } = await this.channelRepository.getAccess(
       channelId,
       uid,
@@ -378,7 +402,7 @@ export default class MessageRepository {
     const result = await channelRef
       .collection("messages")
       .orderBy("createdAt", "desc")
-      .limit(500)
+      .limit(scanLimit)
       .get();
     const searchTerm = queryText.toLocaleLowerCase();
     const matches = result.docs
@@ -390,7 +414,12 @@ export default class MessageRepository {
             .includes(searchTerm),
       )
       .slice(0, limit);
-    return Promise.all(matches.map((snapshot) => this._hydrate(snapshot, uid)));
+    return {
+      messages: await Promise.all(
+        matches.map((snapshot) => this._hydrate(snapshot, uid)),
+      ),
+      limited: result.size === scanLimit,
+    };
   }
 
   async subscribe(channelId, uid, onChange, onError) {

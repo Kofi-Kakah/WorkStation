@@ -15,11 +15,6 @@ const registerSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
 });
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(1),
-});
-
 const resetRequestSchema = z.object({
   email: z.string().email("Invalid email"),
 });
@@ -61,29 +56,11 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-router.post("/login", async (req, res, next) => {
-  try {
-    const { email } = loginSchema.parse(req.body);
-
-    let userRecord;
-    try {
-      userRecord = await auth.getUserByEmail(email);
-    } catch (err) {
-      if (err?.code === "auth/user-not-found") {
-        throw Errors.unauthorized("Invalid credentials");
-      }
-      throw err;
-    }
-
-    return res.json({
-      ok: true,
-      uid: userRecord.uid,
-      email: userRecord.email,
-      displayName: userRecord.displayName,
-    });
-  } catch (error) {
-    next(error);
-  }
+router.post("/login", (_req, res) => {
+  return res.status(410).json({
+    error: "Sign in using Firebase Authentication",
+    code: "FIREBASE_AUTH_REQUIRED",
+  });
 });
 
 router.post("/password-reset/request", async (req, res, next) => {

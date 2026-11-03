@@ -12,7 +12,7 @@ export default {
   apiVersion: process.env.API_VERSION || "v1",
   firebase: {
     projectId:
-      process.env.FIREBASEE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+      process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     privateKey: process.env.FIREBASE_PRIVATE_KEY,
   },

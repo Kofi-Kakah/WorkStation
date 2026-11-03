@@ -11,16 +11,16 @@ import { getAuth } from "../config/firebase.js";
 export async function authenticate(req, res, next) {
   try {
     const header = req.headers.authorization || "";
-    const [scheme, token] = header.split(" ");
+    const match = /^Bearer\s+(\S+)$/i.exec(header);
 
-    if (scheme !== "Bearer" || !token) {
+    if (!match) {
       return res
         .status(401)
         .json({ error: "Missing or malformed Authorization header" });
     }
 
     const auth = getAuth();
-    const decoded = await auth.verifyIdToken(token, true);
+    const decoded = await auth.verifyIdToken(match[1], true);
 
     req.user = {
       uid: decoded.uid,
@@ -32,14 +32,15 @@ export async function authenticate(req, res, next) {
 
     return next();
   } catch (error) {
-    const message =
-      error?.code === "auth/id-token-expired"
-        ? "ID token has expired"
-        : error?.code === "auth/id-token-revoked"
-          ? "ID token has been revoked"
-          : "Invalid ID token";
-
-    return res.status(401).json({ error: message });
+    const authMessages = {
+      "auth/argument-error": "Invalid ID token",
+      "auth/invalid-id-token": "Invalid ID token",
+      "auth/id-token-expired": "ID token has expired",
+      "auth/id-token-revoked": "ID token has been revoked",
+    };
+    const message = authMessages[error?.code];
+    if (message) return res.status(401).json({ error: message });
+    return next(error);
   }
 }
 

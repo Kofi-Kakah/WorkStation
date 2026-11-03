@@ -33,16 +33,19 @@ describe("SearchService", () => {
         listConversations: async () => [],
       },
       {
-        search: async (channelId, uid, query, limit) => {
+        searchRecent: async (channelId, uid, query, limit) => {
           expect(channelId).toBe("channel-1");
           expect(uid).toBe("member-1");
           expect(query).toBe("launch");
           expect(limit).toBe(3);
-          return [{
-            id: "message-1",
-            content: "Launch checklist is ready",
-            senderName: "Jordan",
-          }];
+          return {
+            messages: [{
+              id: "message-1",
+              content: "Launch checklist is ready",
+              senderName: "Jordan",
+            }],
+            limited: false,
+          };
         },
       },
     );
@@ -79,6 +82,30 @@ describe("SearchService", () => {
         },
       ],
       limited: false,
+    });
+
+  });
+
+  it("reports when a conversation search reached its recent-history scan limit", async () => {
+    const service = new SearchService(
+      { listForWorkspace: async () => [] },
+      { list: async () => [] },
+      {
+        listForWorkspace: async () => [],
+        listConversations: async () => [
+          { id: "dm-1", lastMessageAt: "2026-10-01" },
+        ],
+      },
+      {
+        searchRecent: async () => ({ messages: [], limited: true }),
+      },
+    );
+
+    await expect(
+      service.search("workspace-1", "member-1", "launch"),
+    ).resolves.toEqual({
+      results: [],
+      limited: true,
     });
   });
 });

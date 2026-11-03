@@ -129,10 +129,11 @@ stored in `sprints/{sprintId}` and issues reference a sprint through `sprintId`;
 issue IDs remain canonical and sprint assignment is validated transactionally
 against the sprint's project. Workspace search at `/search` returns accessible
 projects, issues, channels, and messages. Message search is scoped to the user's
-accessible conversations, scans up to the latest 500 messages per conversation,
+accessible conversations, scans up to the latest 100 messages per conversation,
 and searches at most 25 conversations per request; the UI signals when the
-result set may be incomplete. Dashboard widget visibility is persisted in browser-local
-preferences, scoped by workspace.
+result set may be incomplete. This bounds message-history scans to 2,500
+documents per search request. Dashboard widget visibility is persisted in
+browser-local preferences, scoped by workspace.
 
 Productivity API routes are under `/api/v1`: `GET /analytics/workspace`,
 `GET|POST /issues/views`, `DELETE /issues/views/:viewId`,
@@ -140,11 +141,14 @@ Productivity API routes are under `/api/v1`: `GET /analytics/workspace`,
 `PUT /sprints/:sprintId/issues`, and `GET /search`. All routes require Firebase
 authentication; workspace and project visibility is checked server-side.
 
-The root `firebase.json` points to `firestore.indexes.json`, which defines the
-composite indexes needed to filter notifications by read state and sort them by
-creation time. Deploy the indexes with `firebase deploy --only firestore:indexes`
-before enabling the unread-only notification view in a production Firebase
-project.
+The root `firebase.json` points to `firestore.rules`, `storage.rules`, and
+`firestore.indexes.json`. Firestore and Storage client access is denied by
+default; application data access must go through Express, which verifies
+Firebase ID tokens and enforces workspace/resource authorization. Deploy the
+rules and indexes with `firebase deploy --only firestore:rules,firestore:indexes,storage`
+before production use. Configure `CORS_ORIGINS` as a comma-separated allowlist
+of exact production frontend origins; production requests with other browser
+origins are rejected.
 
 ## Architecture notes
 

@@ -1,5 +1,4 @@
 import { Router } from "express";
-import health from "./health.js";
 import authRoutes from "../modules/auth/auth.routes.js";
 import userRoutes from "../modules/users/user.routes.js";
 import workspaceRoutes from "../modules/workspaces/workspace.routes.js";
@@ -20,7 +19,6 @@ import sprintRoutes from "../modules/sprints/sprint.routes.js";
 
 const router = Router();
 
-router.use(health);
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/workspaces", workspaceRoutes);
@@ -37,7 +35,7 @@ router.use("/sprints", sprintRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/search", searchRoutes);
 router.use("/integrations", integrationRoutes);
-router.use("/v1/notifications", notificationRoutes);
-router.use("/v1/activities", activityRoutes);
+router.use("/notifications", notificationRoutes);
+router.use("/activities", activityRoutes);
 
 export default router;

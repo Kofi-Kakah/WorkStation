@@ -64,6 +64,39 @@ describe("MessageRepository", () => {
     expect(db.writes).toHaveLength(0);
   });
 
+  it("bounds message search reads and reports when recent history is truncated", async () => {
+    const documents = initialChannel();
+    for (let index = 0; index < 100; index += 1) {
+      documents.set(`channels/channel-1/messages/message-${index}`, {
+        content: index === 0 ? "launch notes" : "ordinary update",
+        createdAt: 100 - index,
+        senderId: "member-1",
+        attachmentIds: [],
+        isDeleted: false,
+      });
+    }
+    const db = createFakeFirestore(documents);
+    const repository = new MessageRepository(
+      db,
+      {
+        getAccess: async () => ({
+          channelRef: db.collection("channels").doc("channel-1"),
+        }),
+      },
+      { getForMessages: async () => [] },
+    );
+
+    await expect(
+      repository.searchRecent("channel-1", "member-1", "launch", 3),
+    ).resolves.toMatchObject({
+      messages: [expect.objectContaining({ content: "launch notes" })],
+      limited: true,
+    });
+    await expect(
+      repository.search("channel-1", "member-1", "launch", 3),
+    ).resolves.toEqual([expect.objectContaining({ content: "launch notes" })]);
+  });
+
   it("creates a notification for a mentioned conversation member", async () => {
     const documents = initialChannel();
     documents.set("channels/channel-1/members/member-2", {

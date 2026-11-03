@@ -85,7 +85,7 @@ export default class SearchService {
     );
     const messageGroups = await Promise.all(
       accessibleConversations.map((channel) =>
-        this.messageRepository.search(
+        this.messageRepository.searchRecent(
           channel.id,
           uid,
           input,
@@ -93,7 +93,7 @@ export default class SearchService {
         ),
       ),
     );
-    const messageResults = messageGroups.flatMap((messages, index) =>
+    const messageResults = messageGroups.flatMap(({ messages }, index) =>
       messages.map((message) => ({
         type: "message",
         id: `${accessibleConversations[index].id}:${message.id}`,
@@ -114,7 +114,8 @@ export default class SearchService {
       limited:
         channels.length + conversations.length > MESSAGE_SEARCH_SCOPE_LIMIT ||
         messageGroups.some(
-          (messages) => messages.length >= MESSAGE_RESULTS_PER_CHANNEL,
+          ({ messages, limited: scanLimited }) =>
+            scanLimited || messages.length >= MESSAGE_RESULTS_PER_CHANNEL,
         ) ||
         allResults.length > RESULT_LIMIT,
     };
