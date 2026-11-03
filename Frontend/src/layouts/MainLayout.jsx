@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Drawer,
@@ -17,6 +18,7 @@ import ContextPanel from "../components/navigation/ContextPanel.jsx";
  * @param {{ children: import('react').ReactNode, className?: string, [key: string]: any }} props
  */
 export function MainLayout({ children, className = "", ...props }) {
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [contextOpen, setContextOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -26,6 +28,17 @@ export function MainLayout({ children, className = "", ...props }) {
   const isCompact = useBreakpointValue({ base: true, md: false }) ?? true;
   const showContextPanel = useBreakpointValue({ base: false, xl: true }) ?? false;
   const collapsed = sidebarCollapsed || isCompact;
+
+  useEffect(() => {
+    const handleSearchShortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        navigate("/search");
+      }
+    };
+    window.addEventListener("keydown", handleSearchShortcut);
+    return () => window.removeEventListener("keydown", handleSearchShortcut);
+  }, [navigate]);
 
   const toggleContext = () => {
     if (!showContextPanel) {

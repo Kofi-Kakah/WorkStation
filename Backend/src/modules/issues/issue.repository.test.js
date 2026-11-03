@@ -250,4 +250,56 @@ describe("IssueRepository", () => {
       actorId: "member-1",
     });
   });
+
+  it("filters issues by assignee, due-date window, and sprint", async () => {
+    const db = createFakeFirestore(
+      buildFixture(
+        new Map([
+          [
+            "issues/issue-1",
+            {
+              projectId: "project-1",
+              title: "Current sprint",
+              status: "todo",
+              assigneeId: "member-2",
+              dueDate: "2026-11-12",
+              sprintId: "sprint-1",
+            },
+          ],
+          [
+            "issues/issue-2",
+            {
+              projectId: "project-1",
+              title: "Later work",
+              status: "todo",
+              assigneeId: "member-2",
+              dueDate: "2026-12-01",
+              sprintId: "sprint-2",
+            },
+          ],
+          [
+            "issues/issue-3",
+            {
+              projectId: "project-1",
+              title: "Unassigned",
+              status: "todo",
+              assigneeId: null,
+              dueDate: "2026-11-12",
+              sprintId: "sprint-1",
+            },
+          ],
+        ]),
+      ),
+    );
+    const repository = new IssueRepository(db);
+
+    const issues = await repository.list("project-1", "member-1", {
+      assigneeId: "member-2",
+      dueDateFrom: "2026-11-01",
+      dueDateTo: "2026-11-30",
+      sprintId: "sprint-1",
+    });
+
+    expect(issues.map((issue) => issue.id)).toEqual(["issue-1"]);
+  });
 });

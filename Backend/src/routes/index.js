@@ -13,6 +13,10 @@ import issueRoutes from "../modules/issues/issue.routes.js";
 import integrationRoutes from "../modules/integrations/integration.routes.js";
 import notificationRoutes from "../modules/notifications/notification.routes.js";
 import activityRoutes from "../modules/activities/activity.routes.js";
+import analyticsRoutes from "../modules/analytics/analytics.routes.js";
+import searchRoutes from "../modules/search/search.routes.js";
+import savedViewsRoutes from "../modules/issues/savedViews.routes.js";
+import sprintRoutes from "../modules/sprints/sprint.routes.js";
 
 const router = Router();
 
@@ -27,7 +31,11 @@ router.use("/channels", messageRoutes);
 router.use("/channels", attachmentRoutes);
 router.use("/messages", messageRoutes);
 router.use("/boards", boardRoutes);
+router.use("/issues/views", savedViewsRoutes);
 router.use("/issues", issueRoutes);
+router.use("/sprints", sprintRoutes);
+router.use("/analytics", analyticsRoutes);
+router.use("/search", searchRoutes);
 router.use("/integrations", integrationRoutes);
 router.use("/v1/notifications", notificationRoutes);
 router.use("/v1/activities", activityRoutes);

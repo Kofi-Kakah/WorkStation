@@ -122,6 +122,24 @@ registration. Workspace activity is stored at
 `workspaces/{workspaceId}/activities/{activityId}` and exposed only to current
 workspace members through `/api/v1/activities`.
 
+The Productivity workspace at `/productivity` provides calendar and timeline
+views, project and issue analytics, assignee workload summaries, advanced
+issue filters, user-owned saved issue views, and sprint planning. Sprints are
+stored in `sprints/{sprintId}` and issues reference a sprint through `sprintId`;
+issue IDs remain canonical and sprint assignment is validated transactionally
+against the sprint's project. Workspace search at `/search` returns accessible
+projects, issues, channels, and messages. Message search is scoped to the user's
+accessible conversations, scans up to the latest 500 messages per conversation,
+and searches at most 25 conversations per request; the UI signals when the
+result set may be incomplete. Dashboard widget visibility is persisted in browser-local
+preferences, scoped by workspace.
+
+Productivity API routes are under `/api/v1`: `GET /analytics/workspace`,
+`GET|POST /issues/views`, `DELETE /issues/views/:viewId`,
+`GET|POST /sprints`, `PATCH /sprints/:sprintId/status`,
+`PUT /sprints/:sprintId/issues`, and `GET /search`. All routes require Firebase
+authentication; workspace and project visibility is checked server-side.
+
 The root `firebase.json` points to `firestore.indexes.json`, which defines the
 composite indexes needed to filter notifications by read state and sort them by
 creation time. Deploy the indexes with `firebase deploy --only firestore:indexes`

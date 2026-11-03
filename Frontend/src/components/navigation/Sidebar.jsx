@@ -25,6 +25,7 @@ import {
   Search,
   Settings,
   Bug,
+  CalendarDays,
   UserRound,
 } from "lucide-react";
 
@@ -55,7 +56,10 @@ const NAV_GROUPS = [
   },
   {
     label: "Issues",
-    items: [{ label: "Issues", icon: Bug, to: "/issues" }],
+    items: [
+      { label: "Issues", icon: Bug, to: "/issues" },
+      { label: "Productivity", icon: CalendarDays, to: "/productivity" },
+    ],
   },
   {
     label: "Account",
@@ -173,6 +177,7 @@ export function Sidebar({
       {!collapsed && (
         <Box px={3} pb={3}>
           <Button
+            type="button"
             w="full"
             h="36px"
             justifyContent="flex-start"
@@ -188,6 +193,7 @@ export function Sidebar({
               color: "textPrimary",
               bg: "surfaceRaised",
             }}
+            onClick={() => navigateTo("/search")}
           >
             <Search size={14} />
             <Text flex={1} textAlign="left">

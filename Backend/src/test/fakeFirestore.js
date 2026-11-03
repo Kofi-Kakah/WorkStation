@@ -125,6 +125,7 @@ export function createFakeFirestore(initialDocuments = new Map()) {
       collection: (name) => collectionReference(`${path}/${name}`),
       get: async () => snapshot(path),
       set: async (value, options) => applyWrite(["set", path, value, options]),
+      create: async (value) => applyWrite(["create", path, value]),
       update: async (value) => applyWrite(["update", path, value]),
       delete: async () => applyWrite(["delete", path]),
     };

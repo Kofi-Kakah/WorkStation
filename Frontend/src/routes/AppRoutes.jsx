@@ -15,13 +15,12 @@ import InvitationResponsePage from "../features/workspace/InvitationResponsePage
 import ChatPage from "../features/chat/ChatPage.jsx";
 import IssuesPage from "../features/issues/IssuesPage.jsx";
 import NotificationsPage from "../features/notifications/NotificationsPage.jsx";
-import {
-  mockProjects,
-  mockIssues,
-  mockChannels,
-} from "../features/dashboard/mockData.js";
 
 const BoardsPage = lazy(() => import("../features/boards/BoardsPage.jsx"));
+const ProductivityPage = lazy(
+  () => import("../features/productivity/ProductivityPage.jsx"),
+);
+const SearchPage = lazy(() => import("../features/search/SearchPage.jsx"));
 
 function ProtectedRoute({ children }) {
   const { authenticated, loading } = useAuth();
@@ -116,6 +115,38 @@ export default function AppRoutes() {
         }
       />
       <Route
+        path="/productivity"
+        element={
+          <ProtectedRoute>
+            <Suspense
+              fallback={
+                <Box minH="40vh" display="grid" placeItems="center" role="status">
+                  <Spinner color="accent" />
+                </Box>
+              }
+            >
+              <ProductivityPage />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            <Suspense
+              fallback={
+                <Box minH="40vh" display="grid" placeItems="center" role="status">
+                  <Spinner color="accent" />
+                </Box>
+              }
+            >
+              <SearchPage />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/channels"
         element={
           <ProtectedRoute>
@@ -167,11 +198,7 @@ export default function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardPage
-              projects={mockProjects}
-              issues={mockIssues}
-              channels={mockChannels}
-            />
+            <DashboardPage />
           </ProtectedRoute>
         }
       />
@@ -179,11 +206,7 @@ export default function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage
-              projects={mockProjects}
-              issues={mockIssues}
-              channels={mockChannels}
-            />
+            <DashboardPage />
           </ProtectedRoute>
         }
       />

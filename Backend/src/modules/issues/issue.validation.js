@@ -26,6 +26,10 @@ export const projectIssueQuerySchema = z.object({
   type: typeEnum.optional(),
   priority: priorityEnum.optional(),
   search: z.string().trim().max(200).optional(),
+  assigneeId: z.string().trim().max(128).optional(),
+  dueDateFrom: z.string().trim().max(30).optional(),
+  dueDateTo: z.string().trim().max(30).optional(),
+  sprintId: z.string().trim().max(128).optional(),
 });
 
 export const createIssueSchema = z.object({

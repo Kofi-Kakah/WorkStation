@@ -1,43 +1,35 @@
 import {
+  Alert,
+  AlertIcon,
   Badge,
   Box,
   Button,
+  Checkbox,
   HStack,
   Icon,
   SimpleGrid,
+  Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   Bug,
   Check,
-  ChevronDown,
   CircleDot,
   Clock3,
   FolderKanban,
   Plus,
+  Settings2,
   Users,
   Hash,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import GlassCard from "../../components/ui/GlassCard.jsx";
 import { useAuth } from "../../contexts/useAuth.jsx";
 import { api } from "../../services/apiClient.js";
 
-const HEATMAP = [
-  [0, 0, 1, 2, 1, 0, 1, 0],
-  [0, 1, 2, 3, 2, 1, 0, 1],
-  [1, 2, 3, 2, 2, 1, 2, 0],
-  [0, 1, 2, 4, 3, 2, 1, 0],
-  [0, 2, 3, 3, 2, 1, 0, 1],
-  [0, 1, 2, 1, 3, 2, 1, 0],
-  [1, 0, 1, 2, 2, 1, 0, 0],
-];
-
-const HEATMAP_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const STATUS_COLORS = {
   done: "green",
   in_progress: "orange",
@@ -45,7 +37,7 @@ const STATUS_COLORS = {
   todo: "gray",
 };
 
-function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
+function MetricCard({ label, value, caption, icon: MetricIcon, index }) {
   return (
     <GlassCard
       variant={index === 3 ? "featured" : "lg"}
@@ -82,19 +74,6 @@ function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
         </Box>
       </HStack>
       <HStack mt={4} spacing={2} minW="0">
-        <HStack
-          spacing={1}
-          px={1.5}
-          py={0.5}
-          borderRadius="full"
-          bg={trend >= 0 ? "successSoft" : "danger"}
-          color={trend >= 0 ? "success" : "white"}
-        >
-          <Icon as={trend >= 0 ? ArrowUpRight : ArrowDownRight} boxSize={3} />
-          <Text fontSize="10px" fontWeight="700">
-            {Math.abs(trend)}%
-          </Text>
-        </HStack>
         <Text
           fontSize="10px"
           color={index === 3 ? "whiteAlpha.800" : "textMuted"}
@@ -103,219 +82,82 @@ function MetricCard({ label, value, caption, icon: MetricIcon, trend, index }) {
           {caption}
         </Text>
       </HStack>
-      <Box
-        h="2px"
-        mt={4}
-        borderRadius="full"
-        bg={index === 3 ? "whiteAlpha.300" : "borderSubtle"}
-        overflow="hidden"
-      >
-        <Box
-          h="full"
-          w={`${[68, 46, 78, 56][index]}%`}
-          borderRadius="full"
-          bg={index === 3 ? "white" : "accent"}
-        />
-      </Box>
     </GlassCard>
   );
 }
 
-function ActivityChart() {
-  const yLabels = ["24", "18", "12", "6", "0"];
-  const xLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
+function StatusBreakdown({ counts }) {
+  const statuses = [
+    ["backlog", "Backlog", "textMuted"],
+    ["todo", "To do", "gray.400"],
+    ["in_progress", "In progress", "accent"],
+    ["in_review", "In review", "warning"],
+    ["done", "Done", "success"],
+  ];
+  const maximum = Math.max(1, ...statuses.map(([key]) => counts[key] || 0));
   return (
     <GlassCard className="p-4 sm:p-5">
-      <HStack justify="space-between" align="start" mb={5}>
-        <Box>
-          <Text fontSize="sm" fontWeight="600">
-            Work completed
-          </Text>
-          <Text
-            mt={1}
-            fontSize="xs"
-            color="textMuted"
-          >
-            Issue activity over the last 7 days
-          </Text>
-        </Box>
-        <Button
-          rightIcon={<ChevronDown size={13} />}
-          variant="outline"
-          size="xs"
-          h="28px"
-          borderColor="borderSubtle"
-          color="textSecondary"
-          bg="surfaceRaised"
-          _hover={{ borderColor: "accentBorder", color: "textPrimary" }}
-        >
-          This week
-        </Button>
-      </HStack>
-
-      <Box
-        as="figure"
-        aria-label="Weekly issue activity trend"
-        display="grid"
-        gridTemplateColumns="30px minmax(0, 1fr)"
-        gap={2}
-      >
-        <VStack
-          h="150px"
-          justify="space-between"
-          align="flex-end"
-          color="textMuted"
-          fontSize="10px"
-          aria-hidden="true"
-        >
-          {yLabels.map((label) => (
-            <Text key={label}>{label}</Text>
-          ))}
-        </VStack>
-        <Box minW="0">
-          <Box h="150px" position="relative">
-            <Box
-              position="absolute"
-              inset="0"
-              display="flex"
-              flexDirection="column"
-              justifyContent="space-between"
-              aria-hidden="true"
-            >
-              {yLabels.map((label) => (
-                <Box
-                  key={label}
-                  borderTop="1px dashed"
-                  borderColor="borderSubtle"
-                />
-              ))}
-            </Box>
-            <svg
-              role="img"
-              aria-label="Work completion rises through the week, with a peak on Friday"
-              viewBox="0 0 640 150"
-              preserveAspectRatio="none"
-              className="absolute inset-0 h-full w-full overflow-visible"
-            >
-              <defs>
-                <linearGradient id="activity-fill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="var(--accent)" stopOpacity=".28" />
-                  <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0 121 C34 112 52 116 84 108 S126 94 160 102 S211 111 244 92 S289 79 321 85 S366 66 402 74 S450 87 480 61 S530 71 558 50 S608 43 640 28 L640 150 L0 150 Z"
-                fill="url(#activity-fill)"
-              />
-              <path
-                d="M0 121 C34 112 52 116 84 108 S126 94 160 102 S211 111 244 92 S289 79 321 85 S366 66 402 74 S450 87 480 61 S530 71 558 50 S608 43 640 28"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="2.5"
-                vectorEffect="non-scaling-stroke"
-              />
-              <circle cx="480" cy="61" r="4" fill="var(--accent-hot)" />
-              <circle
-                cx="480"
-                cy="61"
-                r="8"
-                fill="var(--accent-hot)"
-                fillOpacity=".16"
-              />
-            </svg>
-          </Box>
-          <HStack
-            justify="space-between"
-            mt={2}
-            color="textMuted"
-            fontSize="10px"
-            aria-hidden="true"
-          >
-            {xLabels.map((label) => (
-              <Text key={label}>{label}</Text>
-            ))}
-          </HStack>
-        </Box>
-      </Box>
-    </GlassCard>
-  );
-}
-
-function ActivityHeatmap() {
-  const intensityClasses = Array.from({ length: 5 }, () => "activity-heatmap__cell");
-
-  return (
-    <GlassCard className="p-4 sm:p-5">
-      <HStack justify="space-between" mb={1}>
-        <Text fontSize="sm" fontWeight="600">
-          Team activity
-        </Text>
-        <Text
-          fontSize="10px"
-          color="textMuted"
-        >
-          Last 7 days
-        </Text>
-      </HStack>
-      <Text
-        fontSize="xs"
-        color="textMuted"
-        mb={4}
-      >
-        Activity across projects and conversations
-      </Text>
-      <Box display="grid" gridTemplateColumns="28px repeat(8, 1fr)" gap="5px">
-        {HEATMAP.map((week, row) => (
-          <Box key={HEATMAP_DAYS[row]} display="contents">
-            <Text
-              fontSize="9px"
-              alignSelf="center"
-              color="textMuted"
-            >
-              {HEATMAP_DAYS[row]}
-            </Text>
-            {week.map((level, column) => (
+      <Text fontSize="sm" fontWeight="600">Work by status</Text>
+      <Text mt={1} mb={4} fontSize="xs" color="textMuted">Current issue distribution across accessible projects.</Text>
+      <VStack align="stretch" spacing={3}>
+        {statuses.map(([key, label, color]) => (
+          <HStack key={key} spacing={3}>
+            <Text w="90px" fontSize="xs" color="textSecondary">{label}</Text>
+            <Box flex={1} h="7px" borderRadius="full" bg="surfaceRaised">
               <Box
-                key={`${row}-${column}`}
-                title={`${HEATMAP_DAYS[row]}: activity level ${level}`}
-                h="13px"
-                data-level={level}
-                className={intensityClasses[level]}
+                h="full"
+                w={`${((counts[key] || 0) / maximum) * 100}%`}
+                borderRadius="full"
+                bg={color}
               />
-            ))}
-          </Box>
+            </Box>
+            <Text w="24px" textAlign="right" fontSize="xs" color="textMuted">{counts[key] || 0}</Text>
+          </HStack>
         ))}
-      </Box>
-      <HStack justify="flex-end" spacing={1.5} mt={4}>
-        <Text
-          fontSize="9px"
-          color="textMuted"
-        >
-          Less
-        </Text>
-        {intensityClasses.map((className, index) => (
-          <Box
-            key={index}
-            title={`Activity level ${index}`}
-            w="10px"
-            h="10px"
-            data-level={index}
-            className={className}
-          />
-        ))}
-        <Text
-          fontSize="9px"
-          color="textMuted"
-        >
-          More
-        </Text>
-      </HStack>
+      </VStack>
     </GlassCard>
   );
 }
 
-function ProjectList({ projects }) {
+function UpcomingDeadlines({ issues, onOpenIssue }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekLimit = today.getTime() + 7 * 86400000;
+  const upcoming = issues
+    .filter((issue) => {
+      const dueDate = issue.dueDate ? new Date(issue.dueDate).getTime() : NaN;
+      return issue.status !== "done" && dueDate >= today.getTime() && dueDate <= weekLimit;
+    })
+    .sort((left, right) => new Date(left.dueDate) - new Date(right.dueDate))
+    .slice(0, 5);
+  return (
+    <GlassCard className="p-4 sm:p-5">
+      <Text fontSize="sm" fontWeight="600">Due this week</Text>
+      <Text mt={1} mb={3} fontSize="xs" color="textMuted">Upcoming deadlines from open issues.</Text>
+      <VStack align="stretch" spacing={2}>
+        {upcoming.map((issue) => (
+          <Button
+            key={issue.id}
+            variant="ghost"
+            h="auto"
+            px={2}
+            py={2}
+            justifyContent="space-between"
+            onClick={() => onOpenIssue(issue.id)}
+          >
+            <Text noOfLines={1} fontSize="xs">{issue.title}</Text>
+            <Text flexShrink={0} ml={2} fontSize="10px" color="textMuted">
+              {new Date(issue.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            </Text>
+          </Button>
+        ))}
+        {!upcoming.length && <Text py={5} color="textMuted" fontSize="sm">No open issues due in the next 7 days.</Text>}
+      </VStack>
+    </GlassCard>
+  );
+}
+
+function ProjectList({ projects, onCreateProject }) {
   return (
     <GlassCard className="p-4 sm:p-5">
       <HStack justify="space-between" mb={4}>
@@ -337,6 +179,7 @@ function ProjectList({ projects }) {
           size="xs"
           color="accent"
           _hover={{ color: "accentHot", bg: "accentSoft" }}
+          onClick={onCreateProject}
         >
           New project
         </Button>
@@ -384,8 +227,7 @@ function ProjectList({ projects }) {
                     color="textMuted"
                     noOfLines={1}
                   >
-                    {project.key} · {project.issueCount} issues ·{" "}
-                    {project.memberCount} members
+                    {project.totalIssues} issues · {project.completedIssues} complete
                   </Text>
                 </Box>
               </HStack>
@@ -420,7 +262,7 @@ function ProjectList({ projects }) {
   );
 }
 
-function IssueActivity({ issues }) {
+function IssueActivity({ issues, onViewAll, memberName }) {
   return (
     <GlassCard className="p-4 sm:p-5">
       <HStack justify="space-between" mb={4}>
@@ -441,6 +283,7 @@ function IssueActivity({ issues }) {
           size="xs"
           color="accent"
           _hover={{ color: "accentHot", bg: "accentSoft" }}
+          onClick={onViewAll}
         >
           View all
         </Button>
@@ -482,7 +325,7 @@ function IssueActivity({ issues }) {
                   color="textMuted"
                   noOfLines={1}
                 >
-                  {issue.key} · {issue.assignee || "Unassigned"}
+                  {issue.key} · {memberName(issue.assigneeId)}
                 </Text>
               </Box>
             </HStack>
@@ -504,30 +347,107 @@ function IssueActivity({ issues }) {
   );
 }
 
-/**
- * Workspace overview built with mock data for the approved design-system stage.
- *
- * @param {{ projects?: Array, issues?: Array, channels?: Array }} props
- */
-export function DashboardPage({
-  projects = [],
-  issues = [],
-  channels = [],
-}) {
+export function DashboardPage() {
   const navigate = useNavigate();
-  const { activeWorkspace } = useAuth();
+  const { activeWorkspace, user } = useAuth();
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [hiddenByWorkspace, setHiddenByWorkspace] = useState(() => {
+    try {
+      const preferences = JSON.parse(
+        localStorage.getItem("workstation-dashboard-widgets") || "{}",
+      );
+      return preferences && typeof preferences === "object" && !Array.isArray(preferences)
+        ? preferences
+        : {};
+    } catch (error) {
+      console.warn("Could not load dashboard widget preferences", error?.message);
+      return {};
+    }
+  });
+  const workspaceKey = activeWorkspace?.id || "default";
+  const hiddenWidgets = Array.isArray(hiddenByWorkspace[workspaceKey])
+    ? hiddenByWorkspace[workspaceKey]
+    : [];
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "workstation-dashboard-widgets",
+        JSON.stringify(hiddenByWorkspace),
+      );
+    } catch (error) {
+      console.warn("Could not save dashboard widget preferences", error?.message);
+    }
+  }, [hiddenByWorkspace]);
+  const setWidgetVisibility = (widgetId, visible) => {
+    setHiddenByWorkspace((current) => {
+      const currentHidden = current[workspaceKey] || [];
+      const nextHidden = visible
+        ? currentHidden.filter((id) => id !== widgetId)
+        : [...new Set([...currentHidden, widgetId])];
+      return { ...current, [workspaceKey]: nextHidden };
+    });
+  };
+  const workspaceId = activeWorkspace?.id;
+  const analyticsQuery = useQuery({
+    queryKey: ["analytics", "workspace", workspaceId],
+    enabled: Boolean(workspaceId),
+    queryFn: async () =>
+      (await api.get(
+        `/analytics/workspace?workspaceId=${encodeURIComponent(workspaceId)}&includeIssues=true`,
+      )).analytics,
+  });
+  const channelsQuery = useQuery({
+    queryKey: ["channels", workspaceId, "dashboard"],
+    enabled: Boolean(workspaceId),
+    queryFn: async () =>
+      (await api.get(`/channels?workspaceId=${encodeURIComponent(workspaceId)}`)).channels || [],
+  });
+  const membersQuery = useQuery({
+    queryKey: ["workspace-members", workspaceId],
+    enabled: Boolean(workspaceId),
+    queryFn: async () =>
+      (await api.get(`/workspaces/${encodeURIComponent(workspaceId)}/members`)).members || [],
+  });
   const notificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
+    enabled: Boolean(user?.uid),
+    refetchInterval: 60_000,
     queryFn: async () => {
       const response = await api.get("/notifications?limit=1");
       return response.unreadCount || 0;
     },
   });
+  const projects = (analyticsQuery.data?.projects || []).map((project) => ({
+    ...project,
+    progress: project.totalIssues
+      ? Math.round((project.completedIssues / project.totalIssues) * 100)
+      : 0,
+  }));
+  const issues = (analyticsQuery.data?.issues || []).map((issue) => ({
+    ...issue,
+    key: issue.issueKey || issue.id,
+  }));
+  const channels = channelsQuery.data || [];
+  const membersById = new Map(
+    (membersQuery.data || []).map((member) => [
+      member.userId,
+      member.profile?.displayName || "Workspace member",
+    ]),
+  );
+  const memberName = (userId) =>
+    userId ? membersById.get(userId) || "Workspace member" : "Unassigned";
   const openIssues = issues.filter((issue) => issue.status !== "done");
-  const assignedIssues = issues.filter((issue) => issue.assignee).length;
+  const assignedIssues = issues.filter((issue) => issue.assigneeId).length;
   const projectProgress = projects.length
     ? Math.round(
-        projects.reduce((total, project) => total + (project.progress || 0), 0) /
+        projects.reduce(
+          (total, project) =>
+            total +
+            (project.totalIssues
+              ? (project.completedIssues / project.totalIssues) * 100
+              : 0),
+          0,
+        ) /
           projects.length,
       )
     : 0;
@@ -539,14 +459,12 @@ export function DashboardPage({
       value: openIssues.length,
       caption: "Need team attention",
       icon: Bug,
-      trend: -4,
     },
     {
       label: "Active channels",
       value: channels.length,
       caption: "Workspace conversations",
       icon: Hash,
-      trend: 8,
     },
     {
       label: "Assigned issues",
@@ -555,14 +473,12 @@ export function DashboardPage({
         ? "Unread notification count unavailable"
         : `${unreadNotifications ?? 0} unread updates`,
       icon: Users,
-      trend: 6,
     },
     {
       label: "Project progress",
       value: `${projectProgress}%`,
       caption: "Average across active projects",
       icon: FolderKanban,
-      trend: 12,
     },
   ];
 
@@ -618,47 +534,128 @@ export function DashboardPage({
               bg="success"
               boxShadow="0 0 0 3px var(--success-soft)"
             />
-            <Text fontSize="xs">Live · updated just now</Text>
+            <Text fontSize="xs">Workspace data from connected services</Text>
           </HStack>
         </Box>
-        <Button
-          leftIcon={<Plus size={15} />}
-          variant="unstyled"
-          className="ui-button ui-button--primary"
-          h="40px"
-          flexShrink={0}
-          onClick={() => navigate("/projects")}
-        >
-          Create project
-        </Button>
+        <HStack flexWrap="wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Settings2 size={14} />}
+            aria-expanded={customizeOpen}
+            aria-controls="dashboard-widget-preferences"
+            onClick={() => setCustomizeOpen((open) => !open)}
+          >
+            Customize
+          </Button>
+          <Button
+            leftIcon={<Plus size={15} />}
+            variant="unstyled"
+            className="ui-button ui-button--primary"
+            h="40px"
+            flexShrink={0}
+            onClick={() => navigate("/projects")}
+          >
+            Create project
+          </Button>
+        </HStack>
       </HStack>
 
-      <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
-        {metrics.map((metric, index) => (
-          <MetricCard key={metric.label} {...metric} index={index} />
-        ))}
-      </SimpleGrid>
+      {analyticsQuery.error && (
+        <Alert status="error" borderRadius="16px">
+          <AlertIcon />
+          {analyticsQuery.error.message || "Workspace analytics are unavailable."}
+        </Alert>
+      )}
+      {channelsQuery.error && (
+        <Alert status="error" borderRadius="16px">
+          <AlertIcon />
+          {channelsQuery.error.message || "Workspace channels are unavailable."}
+        </Alert>
+      )}
+      {notificationsQuery.error && (
+        <Alert status="error" borderRadius="warning">
+          <AlertIcon />
+          Unread notification count is unavailable.
+        </Alert>
+      )}
+      {activeWorkspace && analyticsQuery.isPending && (
+        <HStack py={8} justify="center" role="status">
+          <Spinner color="accent" />
+          <Text color="textSecondary">Loading workspace overview…</Text>
+        </HStack>
+      )}
 
-      <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={4}>
-        <Box gridColumn={{ base: "auto", lg: "span 2" }}>
-          <ActivityChart />
-        </Box>
-        <ActivityHeatmap />
-      </SimpleGrid>
+      {customizeOpen && (
+        <GlassCard id="dashboard-widget-preferences" className="p-4">
+          <Text mb={3} fontSize="sm" fontWeight="600">Dashboard widgets</Text>
+          <HStack spacing={4} flexWrap="wrap">
+            {[
+              ["metrics", "Summary metrics"],
+              ["activity", "Activity charts"],
+              ["projects", "Active projects"],
+              ["issues", "Recent issues"],
+            ].map(([id, label]) => (
+              <Checkbox
+                key={id}
+                isChecked={!hiddenWidgets.includes(id)}
+                onChange={(event) =>
+                  setWidgetVisibility(id, event.target.checked)
+                }
+              >
+                {label}
+              </Checkbox>
+            ))}
+          </HStack>
+        </GlassCard>
+      )}
 
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
-        <ProjectList projects={projects} />
-        <IssueActivity issues={issues} />
-      </SimpleGrid>
+      {analyticsQuery.isSuccess && !hiddenWidgets.includes("metrics") && (
+        <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
+          {metrics.map((metric, index) => (
+            <MetricCard key={metric.label} {...metric} index={index} />
+          ))}
+        </SimpleGrid>
+      )}
 
-      <HStack
-        spacing={2}
-        color="textMuted"
-        fontSize="xs"
-      >
-        <Clock3 size={13} />
-        <Text>Workspace data refreshed recently</Text>
-      </HStack>
+      {analyticsQuery.isSuccess && !hiddenWidgets.includes("activity") && (
+        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={4}>
+          <Box gridColumn={{ base: "auto", lg: "span 2" }}>
+            <StatusBreakdown counts={analyticsQuery.data.statusCounts || {}} />
+          </Box>
+          <UpcomingDeadlines
+            issues={issues}
+            onOpenIssue={(issueId) => navigate(`/issues/${issueId}`)}
+          />
+        </SimpleGrid>
+      )}
+
+      {analyticsQuery.isSuccess &&
+        (!hiddenWidgets.includes("projects") ||
+        !hiddenWidgets.includes("issues")) && (
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+          {!hiddenWidgets.includes("projects") && (
+            <ProjectList
+              projects={projects}
+              onCreateProject={() => navigate("/projects")}
+            />
+          )}
+          {!hiddenWidgets.includes("issues") && (
+            <IssueActivity
+              issues={issues}
+              onViewAll={() => navigate("/issues")}
+              memberName={memberName}
+            />
+          )}
+        </SimpleGrid>
+      )}
+
+      {analyticsQuery.isSuccess && (
+        <HStack spacing={2} color="textMuted" fontSize="xs">
+          <Clock3 size={13} />
+          <Text>{analyticsQuery.data.summary.totalIssues} issues across {analyticsQuery.data.summary.projectCount} projects</Text>
+        </HStack>
+      )}
     </Box>
   );
 }

@@ -13,6 +13,10 @@ export default class IssueController {
         type: req.query.type,
         priority: req.query.priority,
         search: req.query.search,
+        assigneeId: req.query.assigneeId,
+        dueDateFrom: req.query.dueDateFrom,
+        dueDateTo: req.query.dueDateTo,
+        sprintId: req.query.sprintId,
       });
       return res.json({ ok: true, issues });
     } catch (error) {

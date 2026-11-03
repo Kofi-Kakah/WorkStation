@@ -126,6 +126,20 @@ export default class IssueRepository {
         if (filters.status && issue.status !== filters.status) return false;
         if (filters.type && issue.type !== filters.type) return false;
         if (filters.priority && issue.priority !== filters.priority) return false;
+        if (filters.assigneeId && issue.assigneeId !== filters.assigneeId) {
+          return false;
+        }
+        if (filters.sprintId && issue.sprintId !== filters.sprintId) {
+          return false;
+        }
+        const dueDate =
+          typeof issue.dueDate === "string" ? issue.dueDate.slice(0, 10) : "";
+        if (filters.dueDateFrom && (!dueDate || dueDate < filters.dueDateFrom)) {
+          return false;
+        }
+        if (filters.dueDateTo && (!dueDate || dueDate > filters.dueDateTo)) {
+          return false;
+        }
         if (filters.search) {
           const query = filters.search.toLowerCase();
           const haystack = [
@@ -178,6 +192,7 @@ export default class IssueRepository {
       createdBy: uid,
       labels: Array.isArray(input.labels) ? input.labels.slice(0, 25) : [],
       dueDate: input.dueDate || null,
+      sprintId: null,
       parentIssueId: input.parentIssueId || null,
       relatedIssueIds: [],
       sourceChannelId: sourceMessage?.channelId || null,

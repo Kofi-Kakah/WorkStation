@@ -30,6 +30,8 @@ const PAGE_TITLES = [
   ["/projects", "Projects"],
   ["/boards", "Boards"],
   ["/issues", "Issues"],
+  ["/productivity", "Productivity"],
+  ["/search", "Search"],
   ["/notifications", "Notifications"],
   ["/settings", "Settings"],
 ];
