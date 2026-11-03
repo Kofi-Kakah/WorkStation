@@ -171,6 +171,7 @@ export default function IssuesPage() {
           queryKey: ["issue-comments", selectedIssueId],
         });
       }
+      await queryClient.invalidateQueries({ queryKey: ["board"] });
     },
   });
 
@@ -537,6 +538,30 @@ export default function IssuesPage() {
               </HStack>
 
               <Text color="textSecondary" mt={3}>{selectedIssue.description || "No description added yet."}</Text>
+              {selectedIssue.sourceChannelId && selectedIssue.sourceMessageId && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={() =>
+                    navigate(
+                      selectedIssue.sourceConversationType === "channel"
+                        ? "/channels"
+                        : "/dm",
+                      {
+                        state: {
+                          sourceConversation: {
+                            channelId: selectedIssue.sourceChannelId,
+                            messageId: selectedIssue.sourceMessageId,
+                          },
+                        },
+                      },
+                    )
+                  }
+                >
+                  Open source conversation
+                </Button>
+              )}
 
               <Box mt={5} as="form" onSubmit={updateSelectedIssue}>
                 <Text fontWeight="700" mb={3}>Update issue</Text>

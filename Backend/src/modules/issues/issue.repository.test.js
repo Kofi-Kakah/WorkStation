@@ -6,8 +6,10 @@ function buildFixture(overrides = new Map()) {
   const documents = new Map([
     ["workspaces/workspace-1", { name: "Team" }],
     ["workspaces/workspace-1/members/member-1", { role: "member" }],
+    ["workspaces/workspace-1/members/member-2", { role: "member" }],
     ["projects/project-1", { workspaceId: "workspace-1", key: "PROJ", status: "active", visibility: "workspace" }],
     ["projects/project-1/members/member-1", { role: "member" }],
+    ["projects/project-1/members/member-2", { role: "member" }],
     ["projects/project-1/members/owner-1", { role: "project_manager" }],
   ]);
   for (const [path, value] of overrides) {
@@ -54,6 +56,97 @@ describe("IssueRepository", () => {
         priority: "medium",
       }),
     ).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it("moves linked board placements when an issue status changes", async () => {
+    const documents = buildFixture(
+      new Map([
+        [
+          "issues/issue-1",
+          {
+            projectId: "project-1",
+            workspaceId: "workspace-1",
+            title: "Ship onboarding",
+            status: "todo",
+            priority: "medium",
+            reporterId: "member-1",
+            assigneeId: "member-2",
+          },
+        ],
+      ]),
+    );
+    for (const boardId of ["board-1", "board-2"]) {
+      documents.set(`boards/${boardId}`, { projectId: "project-1" });
+      documents.set(`boards/${boardId}/lists/todo`, {
+        name: "To do",
+        issueStatus: "todo",
+        position: 1024,
+      });
+      documents.set(`boards/${boardId}/lists/done`, {
+        name: "Done",
+        issueStatus: "done",
+        position: 2048,
+      });
+      documents.set(`boards/${boardId}/cards/card-1`, {
+        issueId: "issue-1",
+        listId: "todo",
+        position: 1024,
+      });
+    }
+
+    const db = createFakeFirestore(documents);
+    const repository = new IssueRepository(db);
+
+    await repository.update("issue-1", "member-1", { status: "done" });
+
+    expect(db.get("issues/issue-1").status).toBe("done");
+    for (const boardId of ["board-1", "board-2"]) {
+      expect(db.get(`boards/${boardId}/cards/card-1`)).toMatchObject({
+        issueId: "issue-1",
+        listId: "done",
+      });
+    }
+    expect(
+      db.writes.filter(({ path }) =>
+        path.startsWith("workspaces/workspace-1/activities/"),
+      ),
+    ).toHaveLength(1);
+    expect(
+      db.writes.filter(({ path }) =>
+        path.startsWith("users/member-2/notifications/"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("rejects a status change that cannot be represented on a linked board", async () => {
+    const db = createFakeFirestore(
+      buildFixture(
+        new Map([
+          [
+            "issues/issue-1",
+            {
+              projectId: "project-1",
+              status: "todo",
+              reporterId: "member-1",
+            },
+          ],
+          ["boards/board-1", { projectId: "project-1" }],
+          ["boards/board-1/lists/todo", { name: "To do", issueStatus: "todo" }],
+          [
+            "boards/board-1/cards/card-1",
+            { issueId: "issue-1", listId: "todo", position: 1024 },
+          ],
+        ]),
+      ),
+    );
+    const repository = new IssueRepository(db);
+
+    await expect(
+      repository.update("issue-1", "member-1", { status: "in_review" }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(db.get("issues/issue-1").status).toBe("todo");
+    expect(db.get("boards/board-1/cards/card-1").listId).toBe("todo");
+    expect(db.writes).toHaveLength(0);
   });
 
   it("lists issue comments for authorized project members", async () => {

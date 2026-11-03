@@ -18,8 +18,20 @@ export const updateBoardSchema = z
   .refine((value) => Object.keys(value).length > 0, {
     message: "Provide at least one board field to update",
   });
-export const createListSchema = z.object({ name });
-export const updateListSchema = z.object({ name });
+const issueStatus = z.enum([
+  "backlog",
+  "todo",
+  "in_progress",
+  "in_review",
+  "done",
+]);
+export const createListSchema = z.object({ name, issueStatus });
+export const updateListSchema = z.object({
+  name: name.optional(),
+  issueStatus: issueStatus.optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "Provide a list name or workflow status to update",
+});
 export const listParamsSchema = z.object({ boardId: id, listId: id });
 export const cardParamsSchema = z.object({ boardId: id, cardId: id });
 export const reorderListsSchema = z.object({

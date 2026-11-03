@@ -24,11 +24,13 @@ function buildFixture(overrides = new Map()) {
     ["channels/channel-1/members/member-1", { userId: "member-1" }],
     ["workspaces/workspace-1", { name: "Team" }],
     ["workspaces/workspace-1/members/member-1", { role: "member" }],
+    ["workspaces/workspace-1/members/member-2", { role: "member" }],
     [
       "projects/project-1",
       { workspaceId: "workspace-1", key: "PROJ", status: "active" },
     ],
     ["projects/project-1/members/member-1", { role: "member" }],
+    ["projects/project-1/members/member-2", { role: "member" }],
   ]);
   for (const [path, value] of overrides) {
     documents.set(path, value);
@@ -44,6 +46,7 @@ const conversionInput = {
   description: "Investigate the failed deployment",
   type: "bug",
   priority: "high",
+  assigneeId: "member-2",
 };
 
 describe("IntegrationRepository", () => {
@@ -61,6 +64,7 @@ describe("IntegrationRepository", () => {
       projectId: "project-1",
       sourceChannelId: "channel-1",
       sourceMessageId: "message-1",
+      sourceConversationType: "channel",
       title: conversionInput.title,
       type: "bug",
       priority: "high",
@@ -69,6 +73,16 @@ describe("IntegrationRepository", () => {
       linkedIssueId: result.issue.id,
       linkedIssueKey: result.issue.issueKey,
     });
+    expect(
+      db.writes.filter(({ path }) =>
+        path.startsWith("workspaces/workspace-1/activities/"),
+      ),
+    ).toHaveLength(1);
+    expect(
+      db.writes.filter(({ path }) =>
+        path.startsWith("users/member-2/notifications/"),
+      ),
+    ).toHaveLength(1);
   });
 
   it("returns the existing issue when conversion is repeated", async () => {
@@ -92,6 +106,16 @@ describe("IntegrationRepository", () => {
       db.writes.filter(
         ({ path, operation }) =>
           path.startsWith("issues/") && operation === "create",
+      ),
+    ).toHaveLength(1);
+    expect(
+      db.writes.filter(({ path }) =>
+        path.startsWith("workspaces/workspace-1/activities/"),
+      ),
+    ).toHaveLength(1);
+    expect(
+      db.writes.filter(({ path }) =>
+        path.startsWith("users/member-2/notifications/"),
       ),
     ).toHaveLength(1);
   });

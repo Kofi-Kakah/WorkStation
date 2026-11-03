@@ -62,7 +62,7 @@ describe("BoardRepository", () => {
       [...db.writes.map(({ path }) => path)].filter((path) =>
         path.startsWith(`boards/${board.id}/lists/`),
       ),
-    ).toHaveLength(3);
+    ).toHaveLength(5);
   });
 
   it("does not allow a project member to create a board", async () => {
@@ -93,6 +93,7 @@ describe("BoardRepository", () => {
       listId: "todo",
       position: 1024,
     });
+    expect(db.get("issues/issue-1").status).toBe("todo");
     await expect(
       repository.createCard("board-1", "member-1", {
         issueId: "issue-1",
@@ -139,6 +140,7 @@ describe("BoardRepository", () => {
       listId: "done",
       position: 1024,
     });
+    expect(db.get("issues/issue-1").status).toBe("done");
   });
 
   it("reorders cards within a list without fractional position ranks", async () => {

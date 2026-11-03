@@ -63,6 +63,27 @@ import { useAuth } from "../../contexts/useAuth.jsx";
 import { api } from "../../services/apiClient.js";
 
 const EMPTY_BOARD_FORM = { name: "", description: "" };
+const ISSUE_STATUSES = [
+  { value: "backlog", label: "Backlog" },
+  { value: "todo", label: "To do" },
+  { value: "in_progress", label: "In progress" },
+  { value: "in_review", label: "In review" },
+  { value: "done", label: "Done" },
+];
+
+function inferIssueStatus(name) {
+  const normalized = name?.trim().toLowerCase();
+  return (
+    {
+      backlog: "backlog",
+      "to do": "todo",
+      todo: "todo",
+      "in progress": "in_progress",
+      "in review": "in_review",
+      done: "done",
+    }[normalized] || ""
+  );
+}
 
 function isIssueManager(workspaceRole, projectRole) {
   return ["owner", "admin"].includes(workspaceRole) ||
@@ -356,6 +377,7 @@ export default function BoardsPage() {
   const [boardForm, setBoardForm] = useState(EMPTY_BOARD_FORM);
   const [listDialog, setListDialog] = useState(null);
   const [listName, setListName] = useState("");
+  const [listStatus, setListStatus] = useState("");
   const [cardDialog, setCardDialog] = useState(null);
   const [issueId, setIssueId] = useState("");
   const [error, setError] = useState("");
@@ -421,6 +443,8 @@ export default function BoardsPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["boards", projectId] }),
       queryClient.invalidateQueries({ queryKey: ["board", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["issues"] }),
+      queryClient.invalidateQueries({ queryKey: ["issue"] }),
     ]);
   };
   const runMutation = useMutation({
@@ -481,14 +505,14 @@ export default function BoardsPage() {
 
   const saveList = async (event) => {
     event.preventDefault();
-    if (!listName.trim() || !boardId) return;
+    if (!listName.trim() || !listStatus || !boardId) return;
     try {
       await runMutation.mutateAsync({
         method: listDialog?.id ? "patch" : "post",
         path: listDialog?.id
           ? `/boards/${boardId}/lists/${listDialog.id}`
           : `/boards/${boardId}/lists`,
-        body: { name: listName },
+        body: { name: listName, issueStatus: listStatus || null },
       });
       setListDialog(null);
       setListName("");
@@ -807,6 +831,10 @@ export default function BoardsPage() {
                         }}
                         onEditList={(targetList) => {
                           setListName(targetList.name);
+                          setListStatus(
+                            targetList.issueStatus ||
+                              inferIssueStatus(targetList.name),
+                          );
                           setListDialog(targetList);
                         }}
                         onDeleteList={deleteList}
@@ -820,6 +848,7 @@ export default function BoardsPage() {
                         h="48px"
                         onClick={() => {
                           setListName("");
+                          setListStatus("todo");
                           setListDialog({ id: "" });
                         }}
                       >
@@ -900,7 +929,7 @@ export default function BoardsPage() {
       >
         <ModalOverlay backdropFilter="blur(8px)" />
         <ModalContent bg="surface" border="1px solid" borderColor="borderSubtle">
-          <ModalHeader>{listDialog?.id ? "Rename list" : "Add a list"}</ModalHeader>
+          <ModalHeader>{listDialog?.id ? "Edit list" : "Add a list"}</ModalHeader>
           <ModalCloseButton />
           <Box as="form" onSubmit={saveList}>
             <ModalBody>
@@ -912,6 +941,25 @@ export default function BoardsPage() {
                   autoFocus
                   onChange={(event) => setListName(event.target.value)}
                 />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Workflow status</FormLabel>
+                <Select
+                  value={listStatus}
+                  onChange={(event) => setListStatus(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Choose the status represented by this list
+                  </option>
+                  {ISSUE_STATUSES.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </Select>
+                <Text mt={1} color="textMuted" fontSize="xs">
+                  Moving an issue into this list also changes its workflow status.
+                </Text>
               </FormControl>
             </ModalBody>
             <ModalFooter gap={2}>

@@ -27,11 +27,22 @@ export default class BoardService {
   }
 
   createList(boardId, uid, input) {
-    return this.repository.createList(boardId, uid, input.name);
+    return this.repository.createList(
+      boardId,
+      uid,
+      input.name,
+      input.issueStatus,
+    );
   }
 
   updateList(boardId, listId, uid, input) {
-    return this.repository.updateList(boardId, listId, uid, input.name);
+    return this.repository.updateList(
+      boardId,
+      listId,
+      uid,
+      input.name,
+      input.issueStatus,
+    );
   }
 
   deleteList(boardId, listId, uid) {

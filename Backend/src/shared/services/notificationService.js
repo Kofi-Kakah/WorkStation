@@ -13,6 +13,31 @@ const fs = getFirestore();
  * be queried independently of per-user notification state.
  */
 export const NotificationService = {
+  recordWithinTransaction(transaction, db, input) {
+    if (!input.userId) return null;
+    const id = generateId();
+    const ref = db
+      .collection(`users/${input.userId}/notifications`)
+      .doc(id);
+    transaction.create(ref, {
+      id,
+      userId: input.userId,
+      workspaceId: input.workspaceId || null,
+      type: input.type || "info",
+      title: input.title || "",
+      body: input.body || "",
+      resource: input.resource || null,
+      link: input.link || null,
+      actorId: input.actorId || null,
+      dedupeKey: input.dedupeKey || null,
+      read: false,
+      data: input.data || {},
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { id };
+  },
+
   async create({
     userId,
     workspaceId,

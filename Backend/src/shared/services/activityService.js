@@ -10,6 +10,28 @@ const fs = getFirestore();
  * Each entry: { actorId, actorName, action, resource, timestamp, context }
  */
 export const ActivityService = {
+  recordWithinTransaction(
+    transaction,
+    db,
+    workspaceId,
+    { actorId, actorName, action, resource, context = {} },
+  ) {
+    if (!workspaceId) return null;
+    const id = generateId();
+    const ref = db.collection(`workspaces/${workspaceId}/activities`).doc(id);
+    transaction.create(ref, {
+      id,
+      workspaceId,
+      actorId: actorId || null,
+      actorName: actorName || null,
+      action,
+      resource: resource || null,
+      context: context || {},
+      createdAt: serverTimestamp(),
+    });
+    return { id };
+  },
+
   async record(
     workspaceId,
     { actorId, actorName, action, resource, context = {} },

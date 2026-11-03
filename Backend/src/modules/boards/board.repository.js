@@ -2,13 +2,17 @@ import { createHash } from "node:crypto";
 import { getFirestore } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
 import { canManageProject } from "../../shared/services/permissionService.js";
+import {
+  normalizeIssueStatus,
+  statusForBoardList,
+} from "../../shared/services/issueWorkflowService.js";
 import { generateId, serverTimestamp } from "../../shared/utils/index.js";
+import IssueRepository from "../issues/issue.repository.js";
 
 const COLLECTION = "boards";
 const POSITION_GAP = 1024;
 const MAX_CARDS_PER_LIST = 400;
 const MAX_CARDS_PER_BOARD = 400;
-
 function cardIdForIssue(boardId, issueId) {
   return createHash("sha256")
     .update(JSON.stringify([boardId, issueId]))
@@ -22,6 +26,7 @@ function orderedByPosition(left, right) {
 export default class BoardRepository {
   constructor(db = getFirestore()) {
     this.db = db;
+    this.issueRepository = new IssueRepository(db);
   }
 
   async _projectAccess(transaction, projectId, uid) {
@@ -101,7 +106,13 @@ export default class BoardRepository {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    const defaults = ["To do", "In progress", "Done"];
+    const defaults = [
+      { name: "Backlog", issueStatus: "backlog" },
+      { name: "To do", issueStatus: "todo" },
+      { name: "In progress", issueStatus: "in_progress" },
+      { name: "In review", issueStatus: "in_review" },
+      { name: "Done", issueStatus: "done" },
+    ];
 
     await this.db.runTransaction(async (transaction) => {
       const access = await this._projectAccess(transaction, projectId, uid);
@@ -109,9 +120,9 @@ export default class BoardRepository {
         throw Errors.forbidden("You cannot create boards in this project");
       }
       transaction.create(boardRef, board);
-      defaults.forEach((listName, index) => {
+      defaults.forEach((list, index) => {
         transaction.create(boardRef.collection("lists").doc(generateId()), {
-          name: listName,
+          ...list,
           position: (index + 1) * POSITION_GAP,
           createdBy: uid,
           createdAt: timestamp,
@@ -180,7 +191,7 @@ export default class BoardRepository {
     });
   }
 
-  async createList(boardId, uid, name) {
+  async createList(boardId, uid, name, issueStatus = null) {
     const boardRef = this.db.collection(COLLECTION).doc(boardId);
     const listRef = boardRef.collection("lists").doc(generateId());
     const timestamp = serverTimestamp();
@@ -195,25 +206,42 @@ export default class BoardRepository {
       const lastPosition = lists.docs[0]?.get("position") || 0;
       transaction.create(listRef, {
         name,
+        issueStatus: issueStatus || statusForBoardList({ name }),
         position: lastPosition + POSITION_GAP,
         createdBy: uid,
         createdAt: timestamp,
         updatedAt: timestamp,
       });
     });
-    return { id: listRef.id, name, createdBy: uid, createdAt: timestamp };
+    return {
+      id: listRef.id,
+      name,
+      issueStatus: issueStatus || statusForBoardList({ name }),
+      createdBy: uid,
+      createdAt: timestamp,
+    };
   }
 
-  async updateList(boardId, listId, uid, name) {
+  async updateList(boardId, listId, uid, name, issueStatus) {
     const boardRef = this.db.collection(COLLECTION).doc(boardId);
     const listRef = boardRef.collection("lists").doc(listId);
     await this.db.runTransaction(async (transaction) => {
       await this._boardAccess(transaction, boardId, uid, { manage: true });
       const list = await transaction.get(listRef);
       if (!list.exists) throw Errors.notFound("List not found");
-      transaction.update(listRef, { name, updatedAt: serverTimestamp() });
+      transaction.update(listRef, {
+        ...(name !== undefined ? { name } : {}),
+        ...(issueStatus !== undefined
+          ? { issueStatus: issueStatus || null }
+          : {}),
+        updatedAt: serverTimestamp(),
+      });
     });
-    return { id: listId, name };
+    return {
+      id: listId,
+      ...(name !== undefined ? { name } : {}),
+      ...(issueStatus !== undefined ? { issueStatus } : {}),
+    };
   }
 
   async deleteList(boardId, listId, uid) {
@@ -293,6 +321,12 @@ export default class BoardRepository {
       if (!issue.exists || issue.get("projectId") !== access.board.projectId) {
         throw Errors.notFound("Issue not found in this project");
       }
+      const targetStatus = statusForBoardList({ id: list.id, ...list.data() });
+      if (!targetStatus) {
+        throw Errors.validation(
+          "Assign a workflow status to this list before adding issue cards",
+        );
+      }
       if (existingCard.exists) {
         throw Errors.conflict("This issue is already on the board");
       }
@@ -301,6 +335,15 @@ export default class BoardRepository {
       }
       if (boardCards.size >= MAX_CARDS_PER_BOARD) {
         throw Errors.validation("A board can have at most 400 issue cards");
+      }
+      if (normalizeIssueStatus(issue.get("status")) !== targetStatus) {
+        await this.issueRepository.updateWithinTransaction(
+          transaction,
+          issueId,
+          uid,
+          { status: targetStatus },
+          { skipBoardId: boardId },
+        );
       }
       position = (cards.docs[0]?.get("position") || 0) + POSITION_GAP;
       transaction.create(cardRef, {
@@ -327,9 +370,11 @@ export default class BoardRepository {
     const cardRef = boardRef.collection("cards").doc(cardId);
     const targetListRef = boardRef.collection("lists").doc(listId);
     await this.db.runTransaction(async (transaction) => {
-      await this._boardAccess(transaction, boardId, uid);
-      const [card, targetList, targetCards] = await Promise.all([
-        transaction.get(cardRef),
+      const access = await this._boardAccess(transaction, boardId, uid);
+      const cardSnapshot = await transaction.get(cardRef);
+      if (!cardSnapshot.exists) throw Errors.notFound("Card not found");
+      const issueRef = this.db.collection("issues").doc(cardSnapshot.get("issueId"));
+      const [targetList, targetCards, issue] = await Promise.all([
         transaction.get(targetListRef),
         transaction.get(
           boardRef
@@ -338,11 +383,23 @@ export default class BoardRepository {
             .orderBy("position", "asc")
             .limit(MAX_CARDS_PER_LIST + 1),
         ),
+        transaction.get(issueRef),
       ]);
-      if (!card.exists) throw Errors.notFound("Card not found");
       if (!targetList.exists) throw Errors.notFound("Target list not found");
+      if (!issue.exists || issue.get("projectId") !== access.board.projectId) {
+        throw Errors.notFound("Issue not found in this project");
+      }
       if (targetCards.size > MAX_CARDS_PER_LIST) {
         throw Errors.validation("A list can have at most 400 cards");
+      }
+      const targetStatus = statusForBoardList({
+        id: targetList.id,
+        ...targetList.data(),
+      });
+      if (!targetStatus) {
+        throw Errors.validation(
+          "Assign a workflow status to this list before moving issue cards",
+        );
       }
 
       const orderedCards = targetCards.docs
@@ -354,9 +411,19 @@ export default class BoardRepository {
       }
       orderedCards.splice(position, 0, {
         id: cardId,
-        ...card.data(),
+        ...cardSnapshot.data(),
         listId,
       });
+
+      if (normalizeIssueStatus(issue.get("status")) !== targetStatus) {
+        await this.issueRepository.updateWithinTransaction(
+          transaction,
+          issue.id,
+          uid,
+          { status: targetStatus },
+          { skipBoardId: boardId },
+        );
+      }
 
       const previous = orderedCards[position - 1]?.position;
       const next = orderedCards[position + 1]?.position;

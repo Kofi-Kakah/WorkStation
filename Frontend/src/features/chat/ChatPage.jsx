@@ -135,7 +135,9 @@ function MessageItem({
             color={message.isDeleted ? "textMuted" : "textSecondary"}
             fontSize="sm"
           >
-            {message.isDeleted ? "This message was deleted." : message.content}
+            {message.isDeleted
+              ? "This message was deleted."
+              : renderIssueMentions(message.content, onOpenIssue)}
           </Text>
           {message.linkedIssueId && (
             <Badge
@@ -333,8 +335,61 @@ function MessageItem({
   );
 }
 
+function renderIssueMentions(content, onOpenIssue) {
+  return content.split(/(\[\[issue:[^\]]+\]\])/g).map((part, index) => {
+    const match =
+      /^\[\[issue:([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]\]$/.exec(
+        part,
+      );
+    if (!match) return part;
+    const [
+      ,
+      issueId,
+      issueKey,
+      encodedTitle,
+      encodedType,
+      encodedPriority,
+      encodedStatus,
+      encodedAssignee,
+    ] = match;
+    const decodePart = (value) => {
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return value;
+      }
+    };
+    return (
+      <Badge
+        key={`${issueId}-${index}`}
+        as="button"
+        type="button"
+        mx={1}
+        px={2}
+        py={1}
+        border="1px solid"
+        borderColor="accentBorder"
+        borderRadius="full"
+        bg="accentSoft"
+        color="accentHot"
+        cursor="pointer"
+        whiteSpace="normal"
+        textAlign="left"
+        onClick={() => onOpenIssue?.(issueId)}
+        _hover={{ bg: "surfaceRaised" }}
+      >
+        {issueKey}: {decodePart(encodedTitle)} - {decodePart(encodedType)} /{" "}
+        {decodePart(encodedPriority)} /{" "}
+        {decodePart(encodedStatus).replaceAll("_", " ")} -{" "}
+        {decodePart(encodedAssignee)}
+      </Badge>
+    );
+  });
+}
+
 function MessageComposer({
   channelId,
+  workspaceId,
   members,
   parentMessageId = null,
   onSent,
@@ -344,9 +399,48 @@ function MessageComposer({
   const [mentions, setMentions] = useState([]);
   const [files, setFiles] = useState([]);
   const [error, setError] = useState("");
+  const [issueProjectId, setIssueProjectId] = useState("");
+  const [issueSearch, setIssueSearch] = useState("");
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeout = useRef(null);
+  const projectsQuery = useQuery({
+    queryKey: ["projects", workspaceId],
+    enabled: Boolean(workspaceId),
+    queryFn: async () => {
+      const response = await api.get(
+        `/projects?workspaceId=${encodeURIComponent(workspaceId)}`,
+      );
+      return response.projects || [];
+    },
+  });
+  const mentionProjectId = projectsQuery.data?.some(
+    (project) => project.id === issueProjectId,
+  )
+    ? issueProjectId
+    : projectsQuery.data?.[0]?.id || "";
+  const mentionIssuesQuery = useQuery({
+    queryKey: ["issues", mentionProjectId, "mention", issueSearch],
+    enabled: Boolean(mentionProjectId && issueSearch.trim().length >= 2),
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        projectId: mentionProjectId,
+        search: issueSearch.trim(),
+      });
+      const response = await api.get(`/issues?${params.toString()}`);
+      return response.issues || [];
+    },
+  });
+  const mentionMembersQuery = useQuery({
+    queryKey: ["project", mentionProjectId, "members"],
+    enabled: Boolean(mentionProjectId && issueSearch.trim().length >= 2),
+    queryFn: async () => {
+      const response = await api.get(
+        `/projects/${mentionProjectId}/members`,
+      );
+      return response.members || [];
+    },
+  });
 
   const sendMessage = useMutation({
     mutationFn: async (body) => {
@@ -373,6 +467,7 @@ function MessageComposer({
       setContent("");
       setMentions([]);
       setFiles([]);
+      setIssueSearch("");
       setError("");
       await queryClient.invalidateQueries({
         queryKey: ["messages", channelId],
@@ -414,6 +509,26 @@ function MessageComposer({
       );
     }
     event.target.value = "";
+    textareaRef.current?.focus();
+  };
+
+  const addIssueMention = (event) => {
+    const issueId = event.target.value;
+    const issue = (mentionIssuesQuery.data || []).find(
+      (item) => item.id === issueId,
+    );
+    if (!issue) return;
+    const assignee = (mentionMembersQuery.data || []).find(
+      (member) => member.userId === issue.assigneeId,
+    );
+    const assigneeName = issue.assigneeId
+      ? assignee?.profile?.displayName || "Assigned member"
+      : "Unassigned";
+    const mention = `[[issue:${issue.id}|${issue.issueKey}|${encodeURIComponent(issue.title)}|${encodeURIComponent(issue.type)}|${encodeURIComponent(issue.priority)}|${encodeURIComponent(issue.status)}|${encodeURIComponent(assigneeName)}]]`;
+    setContent((current) =>
+      `${current}${current && !current.endsWith(" ") ? " " : ""}${mention} `,
+    );
+    setIssueSearch("");
     textareaRef.current?.focus();
   };
 
@@ -470,6 +585,24 @@ function MessageComposer({
           {error}
         </Alert>
       )}
+      {projectsQuery.error && (
+        <Text role="alert" mb={2} color="danger" fontSize="xs">
+          Project list could not be loaded for issue mentions:{" "}
+          {projectsQuery.error.message || "request failed"}
+        </Text>
+      )}
+      {mentionIssuesQuery.error && (
+        <Text role="alert" mb={2} color="danger" fontSize="xs">
+          Issues could not be searched:{" "}
+          {mentionIssuesQuery.error.message || "request failed"}
+        </Text>
+      )}
+      {mentionMembersQuery.error && (
+        <Text role="alert" mb={2} color="danger" fontSize="xs">
+          Issue assignee information could not be loaded:{" "}
+          {mentionMembersQuery.error.message || "request failed"}
+        </Text>
+      )}
       {files.length > 0 && (
         <HStack mb={2} spacing={2} flexWrap="wrap">
           {files.map((file, index) => (
@@ -503,6 +636,7 @@ function MessageComposer({
       <HStack
         align="end"
         spacing={2}
+        flexWrap={{ base: "wrap", md: "nowrap" }}
         p={2}
         border="1px solid"
         borderColor="borderSubtle"
@@ -545,6 +679,62 @@ function MessageComposer({
             {members.map((member) => (
               <option key={member.userId} value={member.userId}>
                 {member.displayName}
+              </option>
+            ))}
+          </Select>
+        )}
+        {projectsQuery.data?.length > 0 && (
+          <Select
+            aria-label="Select project for issue mention"
+            value={mentionProjectId}
+            onChange={(event) => {
+              setIssueProjectId(event.target.value);
+              setIssueSearch("");
+            }}
+            w="100px"
+            minW="100px"
+            size="sm"
+            variant="unstyled"
+            color="textMuted"
+          >
+            {projectsQuery.data.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </Select>
+        )}
+        {projectsQuery.data?.length > 0 && (
+          <Input
+            aria-label="Search issues to mention"
+            value={issueSearch}
+            onChange={(event) => setIssueSearch(event.target.value)}
+            placeholder="# issue"
+            w="100px"
+            minW="86px"
+            size="sm"
+            variant="unstyled"
+            color="textMuted"
+          />
+        )}
+        {projectsQuery.data?.length > 0 && issueSearch.trim().length >= 2 && (
+          <Select
+            aria-label="Mention an issue"
+            placeholder={
+              mentionIssuesQuery.isPending ? "Searching..." : "Select issue"
+            }
+            value=""
+            onChange={addIssueMention}
+            w="140px"
+            minW="100px"
+            size="sm"
+            variant="unstyled"
+            color="textMuted"
+            isDisabled={mentionIssuesQuery.isPending}
+          >
+            {(mentionIssuesQuery.data || []).map((issue) => (
+              <option key={issue.id} value={issue.id}>
+                {issue.issueKey} - {issue.title}
               </option>
             ))}
           </Select>
@@ -595,6 +785,7 @@ export default function ChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDirectRoute = location.pathname.startsWith("/dm");
+  const sourceConversation = location.state?.sourceConversation;
   const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
   const scopeKey = `${activeWorkspace?.id || ""}:${isDirectRoute ? "dm" : "channel"}`;
   const [activeSelection, setActiveSelection] = useState({
@@ -602,10 +793,16 @@ export default function ChatPage() {
     id: "",
   });
   const activeId =
-    activeSelection.scopeKey === scopeKey ? activeSelection.id : "";
+    sourceConversation?.channelId ||
+    (activeSelection.scopeKey === scopeKey ? activeSelection.id : "");
   const setActiveId = useCallback(
-    (id) => setActiveSelection({ scopeKey, id }),
-    [scopeKey],
+    (id) => {
+      setActiveSelection({ scopeKey, id });
+      if (sourceConversation) {
+        navigate(location.pathname, { replace: true, state: null });
+      }
+    },
+    [location.pathname, navigate, scopeKey, sourceConversation],
   );
   const [searchSelection, setSearchSelection] = useState({
     scopeKey: "",
@@ -622,7 +819,8 @@ export default function ChatPage() {
   const [editText, setEditText] = useState("");
   const [formError, setFormError] = useState("");
   const [loadingEarlier, setLoadingEarlier] = useState(false);
-  const [jumpTargetId, setJumpTargetId] = useState("");
+  const [jumpTargetIdState, setJumpTargetId] = useState("");
+  const jumpTargetId = sourceConversation?.messageId || jumpTargetIdState;
   const channelDialog = useDisclosure();
   const conversationDialog = useDisclosure();
   const conversionDialog = useDisclosure();
@@ -633,6 +831,7 @@ export default function ChatPage() {
     description: "",
     type: "task",
     priority: "medium",
+    assigneeId: "",
   });
   const [channelForm, setChannelForm] = useState({
     name: "",
@@ -690,6 +889,16 @@ export default function ChatPage() {
         `/projects?workspaceId=${encodeURIComponent(activeWorkspace.id)}`,
       );
       return response.projects || [];
+    },
+  });
+  const conversionMembersQuery = useQuery({
+    queryKey: ["project", conversionForm.projectId, "members"],
+    enabled: Boolean(conversionForm.projectId && conversionDialog.isOpen),
+    queryFn: async () => {
+      const response = await api.get(
+        `/projects/${conversionForm.projectId}/members`,
+      );
+      return response.members || [];
     },
   });
 
@@ -963,6 +1172,7 @@ export default function ChatPage() {
           description: conversionForm.description.trim(),
           type: conversionForm.type,
           priority: conversionForm.priority,
+          assigneeId: conversionForm.assigneeId || null,
         },
       );
     },
@@ -988,6 +1198,7 @@ export default function ChatPage() {
       description: message.content || "",
       type: "task",
       priority: "medium",
+      assigneeId: "",
     });
     conversionDialog.onOpen();
   };
@@ -1628,6 +1839,7 @@ export default function ChatPage() {
                       {selected.currentUserIsMember && (
                         <MessageComposer
                           channelId={selected.id}
+                          workspaceId={activeWorkspace?.id}
                           members={activeMembers}
                           parentMessageId={threadParent.id}
                         />
@@ -1638,6 +1850,7 @@ export default function ChatPage() {
                 {selected.currentUserIsMember && !threadParent && (
                   <MessageComposer
                     channelId={selected.id}
+                    workspaceId={activeWorkspace?.id}
                     members={activeMembers}
                   />
                 )}
@@ -1866,6 +2079,7 @@ export default function ChatPage() {
                       setConversionForm((current) => ({
                         ...current,
                         projectId: event.target.value,
+                        assigneeId: "",
                       }))
                     }
                     isDisabled={projectsQuery.isPending || !projectsQuery.data?.length}
@@ -1950,6 +2164,34 @@ export default function ChatPage() {
                     </Select>
                   </FormControl>
                 </HStack>
+                <FormControl>
+                  <FormLabel fontSize="sm">Assignee</FormLabel>
+                  <Select
+                    value={conversionForm.assigneeId}
+                    onChange={(event) =>
+                      setConversionForm((current) => ({
+                        ...current,
+                        assigneeId: event.target.value,
+                      }))
+                    }
+                    isDisabled={conversionMembersQuery.isPending}
+                  >
+                    <option value="">Unassigned</option>
+                    {(conversionMembersQuery.data || []).map((member) => (
+                      <option key={member.userId} value={member.userId}>
+                        {member.profile?.displayName ||
+                          member.profile?.email ||
+                          member.userId}
+                      </option>
+                    ))}
+                  </Select>
+                  {conversionMembersQuery.error && (
+                    <Text mt={1} color="danger" fontSize="xs">
+                      {conversionMembersQuery.error.message ||
+                        "Project members could not be loaded."}
+                    </Text>
+                  )}
+                </FormControl>
               </VStack>
             </ModalBody>
             <ModalFooter gap={2}>

@@ -12,4 +12,5 @@ export const messageConversionSchema = z.object({
   priority: z
     .enum(["lowest", "low", "medium", "high", "highest"])
     .default("medium"),
+  assigneeId: id.nullable().optional(),
 });

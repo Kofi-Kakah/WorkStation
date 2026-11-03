@@ -1,6 +1,8 @@
 import { getFirestore } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
 import { serverTimestamp } from "../../shared/utils/index.js";
+import ActivityService from "../../shared/services/activityService.js";
+import NotificationService from "../../shared/services/notificationService.js";
 import IssueRepository from "../issues/issue.repository.js";
 
 export default class IntegrationRepository {
@@ -14,9 +16,10 @@ export default class IntegrationRepository {
     const messageRef = channelRef.collection("messages").doc(input.messageId);
 
     return this.db.runTransaction(async (transaction) => {
-      const [channelSnapshot, messageSnapshot] = await Promise.all([
+      const [channelSnapshot, messageSnapshot, actorProfile] = await Promise.all([
         transaction.get(channelRef),
         transaction.get(messageRef),
+        transaction.get(this.db.collection("users").doc(uid)),
       ]);
 
       if (
@@ -89,6 +92,7 @@ export default class IntegrationRepository {
           sourceMessage: {
             channelId: input.channelId,
             messageId: input.messageId,
+            conversationType: channel.type,
           },
         },
       );
@@ -98,6 +102,38 @@ export default class IntegrationRepository {
         linkedIssueKey: issue.issueKey,
         linkedIssueAt: serverTimestamp(),
       });
+      ActivityService.recordWithinTransaction(
+        transaction,
+        this.db,
+        channel.workspaceId,
+        {
+          actorId: uid,
+          actorName: actorProfile.get("displayName"),
+          action: "issue.created_from_message",
+          resource: {
+            type: "issue",
+            id: issue.id,
+            key: issue.issueKey,
+          },
+          context: {
+            channelId: input.channelId,
+            messageId: input.messageId,
+          },
+        },
+      );
+      if (issue.assigneeId && issue.assigneeId !== uid) {
+        NotificationService.recordWithinTransaction(transaction, this.db, {
+          userId: issue.assigneeId,
+          workspaceId: channel.workspaceId,
+          type: "info",
+          title: "You were assigned an issue",
+          body: `${issue.issueKey}: ${issue.title}`,
+          resource: { type: "issue", id: issue.id },
+          link: `/issues/${issue.id}`,
+          actorId: uid,
+          dedupeKey: `issue-created-${issue.id}`,
+        });
+      }
 
       return { issue, alreadyConverted: false };
     });

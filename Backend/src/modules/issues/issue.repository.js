@@ -1,12 +1,19 @@
 import { getFirestore } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
 import { canManageProject } from "../../shared/services/permissionService.js";
+import {
+  normalizeIssueStatus,
+  statusForBoardList,
+} from "../../shared/services/issueWorkflowService.js";
+import ActivityService from "../../shared/services/activityService.js";
+import NotificationService from "../../shared/services/notificationService.js";
 import { generateId, serverTimestamp } from "../../shared/utils/index.js";
 
 const COLLECTION = "issues";
 const VALID_TYPES = ["epic", "story", "task", "bug", "subtask"];
 const VALID_PRIORITIES = ["lowest", "low", "medium", "high", "highest"];
-const VALID_STATUSES = ["backlog", "todo", "in_progress", "in_review", "done"];
+const POSITION_GAP = 1024;
+const MAX_CARDS_PER_LIST = 400;
 
 function toMillis(value) {
   if (!value) return 0;
@@ -88,7 +95,7 @@ export default class IssueRepository {
   }
 
   _normalizeStatus(status) {
-    return VALID_STATUSES.includes(status) ? status : "backlog";
+    return normalizeIssueStatus(status);
   }
 
   _sanitizeIssue(issue) {
@@ -175,6 +182,7 @@ export default class IssueRepository {
       relatedIssueIds: [],
       sourceChannelId: sourceMessage?.channelId || null,
       sourceMessageId: sourceMessage?.messageId || null,
+      sourceConversationType: sourceMessage?.conversationType || null,
       issueKey: `${project.key || "PROJ"}-${issueId.slice(0, 6).toUpperCase()}`,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -219,7 +227,86 @@ export default class IssueRepository {
   }
 
   async update(issueId, uid, updates) {
-    return this.db.runTransaction(async (transaction) => {
+    return this.db.runTransaction((transaction) =>
+      this.updateWithinTransaction(transaction, issueId, uid, updates),
+    );
+  }
+
+  async _boardPlacementUpdates(
+    transaction,
+    issueId,
+    projectId,
+    status,
+    skipBoardId,
+  ) {
+    const boards = await transaction.get(
+      this.db.collection("boards").where("projectId", "==", projectId),
+    );
+    const updates = [];
+
+    for (const boardSnapshot of boards.docs) {
+      if (boardSnapshot.id === skipBoardId || boardSnapshot.get("archived")) {
+        continue;
+      }
+
+      const boardRef = boardSnapshot.ref;
+      const [cards, lists] = await Promise.all([
+        transaction.get(
+          boardRef.collection("cards").where("issueId", "==", issueId),
+        ),
+        transaction.get(boardRef.collection("lists").orderBy("position", "asc")),
+      ]);
+      const card = cards.docs[0];
+      if (!card) continue;
+
+      const currentList = lists.docs.find(
+        (list) => list.id === card.get("listId"),
+      );
+      if (currentList && statusForBoardList(currentList.data()) === status) {
+        continue;
+      }
+
+      const targetList = lists.docs
+        .map((list) => ({ id: list.id, ...list.data() }))
+        .find((list) => statusForBoardList(list) === status);
+      if (!targetList) {
+        throw Errors.validation(
+          `A board containing this issue needs a list mapped to the "${status}" status`,
+        );
+      }
+      if (card.get("listId") === targetList.id) continue;
+
+      const destinationCards = await transaction.get(
+        boardRef
+          .collection("cards")
+          .where("listId", "==", targetList.id)
+          .orderBy("position", "desc")
+          .limit(MAX_CARDS_PER_LIST),
+      );
+      if (destinationCards.size >= MAX_CARDS_PER_LIST) {
+        throw Errors.validation(
+          `The "${targetList.name}" list is full; move or remove a card before changing this issue's status`,
+        );
+      }
+      const nextPosition =
+        (destinationCards.docs[0]?.get("position") || 0) + POSITION_GAP;
+      updates.push({
+        ref: card.ref,
+        listId: targetList.id,
+        position: nextPosition,
+      });
+    }
+
+    return updates;
+  }
+
+  async updateWithinTransaction(
+    transaction,
+    issueId,
+    uid,
+    updates,
+    { skipBoardId = null } = {},
+  ) {
       const access = await this._issueAccess(transaction, issueId, uid);
       const issue = access.issue;
       const allowedToEdit =
@@ -274,10 +361,66 @@ export default class IssueRepository {
         nextIssue.resolvedAt = updates.status === "done" ? serverTimestamp() : null;
       }
 
+      const boardUpdates =
+        updates.status && updates.status !== issue.status
+          ? await this._boardPlacementUpdates(
+              transaction,
+              issueId,
+              issue.projectId,
+              nextIssue.status,
+              skipBoardId,
+            )
+          : [];
+
+      const statusChanged =
+        updates.status && updates.status !== issue.status;
+      const actorProfile = statusChanged
+        ? await transaction.get(this.db.collection("users").doc(uid))
+        : null;
       nextIssue.updatedAt = serverTimestamp();
       transaction.update(access.issueRef, nextIssue);
+      boardUpdates.forEach(({ ref, listId, position }) => {
+        transaction.update(ref, {
+          listId,
+          position,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      if (statusChanged) {
+        const activity = ActivityService.recordWithinTransaction(
+          transaction,
+          this.db,
+          issue.workspaceId,
+          {
+            actorId: uid,
+            actorName: actorProfile?.get("displayName"),
+            action: "issue.status_changed",
+            resource: {
+              type: "issue",
+              id: issueId,
+              key: issue.issueKey,
+            },
+            context: {
+              fromStatus: issue.status,
+              toStatus: nextIssue.status,
+            },
+          },
+        );
+        if (issue.assigneeId && issue.assigneeId !== uid) {
+          NotificationService.recordWithinTransaction(transaction, this.db, {
+            userId: issue.assigneeId,
+            workspaceId: issue.workspaceId,
+            type: "info",
+            title: "Issue status changed",
+            body: `${issue.issueKey || "An issue"} moved to ${nextIssue.status.replaceAll("_", " ")}.`,
+            resource: { type: "issue", id: issueId },
+            link: `/issues/${issueId}`,
+            actorId: uid,
+            dedupeKey: activity ? `issue-status-${activity.id}` : null,
+          });
+        }
+      }
       return { id: issueId, ...nextIssue };
-    });
   }
 
   async updateStatus(issueId, uid, status) {
