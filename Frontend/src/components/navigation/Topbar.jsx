@@ -5,6 +5,7 @@ import {
   IconButton,
   Text,
   Tooltip,
+  useColorMode,
 } from "@chakra-ui/react";
 import {
   Home,
@@ -12,8 +13,10 @@ import {
   ChevronRight,
   Command,
   Menu,
+  MoonStar,
   PanelRight,
   Search,
+  Sun,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -44,6 +47,7 @@ const PAGE_TITLES = [
 export function Topbar({ className = "", onMenu, onToggleContext }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { colorMode, toggleColorMode } = useColorMode();
   const { profile, user } = useAuth();
   const unreadNotificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -188,6 +192,17 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
               </Box>
             )}
           </Box>
+        </Tooltip>
+
+        <Tooltip label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+          <IconButton
+            aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            icon={colorMode === "dark" ? <Sun size={16} /> : <MoonStar size={16} />}
+            variant="ghost"
+            size="sm"
+            display="inline-flex"
+            onClick={toggleColorMode}
+          />
         </Tooltip>
 
         <Tooltip label="Open workspace context">

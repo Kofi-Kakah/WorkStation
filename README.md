@@ -98,7 +98,23 @@ curl http://localhost:4000/api/health/ready
 | Frontend | `npm run dev` | Vite dev server |
 | Frontend | `npm run build` | Production build |
 | Frontend | `npm run lint` | ESLint |
+| Frontend | `npm run test` | Vitest + React Testing Library |
+| Frontend | `npm run test:watch` | Watch frontend tests |
 | Frontend | `npm run preview` | Preview production build |
+
+### Test coverage
+
+Backend Vitest tests cover workspace/project permissions, channel membership,
+message behavior and pagination/search limits, board and issue operations,
+integrations, notifications, analytics, CORS policy, and API authentication
+boundaries. On constrained development machines, run
+`npm --prefix Backend test -- --maxWorkers=1 --minWorkers=1` to avoid worker
+contention.
+
+Frontend tests use Vitest, jsdom, and React Testing Library. Current component
+tests cover sign-in validation, Firebase token verification, authentication
+failures, and password-reset feedback. They mock Firebase and the API; they do
+not replace Firebase Emulator or browser end-to-end testing.
 
 ## Environment variables
 

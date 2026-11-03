@@ -10,7 +10,7 @@ import AppRoutes from "./routes/AppRoutes.jsx";
 export default function App() {
   return (
     <ChakraProvider theme={theme}>
-      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+      <ColorModeScript initialColorMode="system" />
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>

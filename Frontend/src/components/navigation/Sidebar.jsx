@@ -120,10 +120,11 @@ export function Sidebar({
             h="32px"
             flexShrink={0}
             borderRadius="10px"
-            bg="accent"
+            bg="linear-gradient(135deg, #d8b7ff 0%, #bd79ff 38%, #9660ce 100%)"
             color="white"
             fontSize="sm"
             fontWeight="800"
+            boxShadow="0 10px 20px rgba(150, 96, 206, 0.35)"
           >
             U
           </Box>
