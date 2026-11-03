@@ -5,7 +5,7 @@ import { getStorage } from "firebase/storage";
 
 // Client-side Firebase configuration.
 // Vite exposes env vars prefixed with VITE_ at build time.
-const config = {
+export const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -29,4 +29,4 @@ if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === "true") {
 
 export { app, auth, firestore, storage };
 
-export default { app, auth, firestore, storage };
+export default { app, auth, firestore, storage, config };

@@ -107,7 +107,26 @@ logging settings, and Firebase Admin credentials (emulator mode by default).
 
 **Frontend** (see `.env.local`): `VITE_FIREBASE_*` client config (already populated for
 project `workshop-111f1`) and `VITE_USE_FIREBASE_EMULATOR=true` to connect to the
-emulator locally.
+emulator locally. Browser push additionally requires `VITE_FIREBASE_VAPID_KEY`,
+the public Web Push certificate key from Firebase Console. It is a public client
+configuration value, not a server credential. Enable Firebase Cloud Messaging
+for the project before opting into browser push.
+
+Notifications are stored per user at
+`users/{userId}/notifications/{notificationId}` and device registrations at
+`users/{userId}/devices/{sha256Token}`. Device tokens are only accepted for the
+authenticated user and are never returned by the API. Notification preferences
+are stored on the user's profile. The authenticated `/api/v1/notifications`
+routes provide cursor-paginated results, unread counts, read state, and device
+registration. Workspace activity is stored at
+`workspaces/{workspaceId}/activities/{activityId}` and exposed only to current
+workspace members through `/api/v1/activities`.
+
+The root `firebase.json` points to `firestore.indexes.json`, which defines the
+composite indexes needed to filter notifications by read state and sort them by
+creation time. Deploy the indexes with `firebase deploy --only firestore:indexes`
+before enabling the unread-only notification view in a production Firebase
+project.
 
 ## Architecture notes
 

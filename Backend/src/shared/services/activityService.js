@@ -1,4 +1,5 @@
 import { getFirestore } from "../../config/firebase.js";
+import { Errors } from "../errors/index.js";
 import { generateId, serverTimestamp } from "../utils/index.js";
 
 const fs = getFirestore();
@@ -52,19 +53,37 @@ export const ActivityService = {
     return { id };
   },
 
-  async list(workspaceId, { limit = 50, offset = 0, resource = null } = {}) {
-    let q = fs
+  async list(
+    workspaceId,
+    { limit = 20, cursor = null, resource = null } = {},
+    db = fs,
+  ) {
+    let q = db
       .collection(`workspaces/${workspaceId}/activities`)
       .orderBy("createdAt", "desc");
     if (resource)
       q = q
         .where("resource.type", "==", resource.type)
         .where("resource.id", "==", resource.id);
-    const snap = await q.limit(limit + 1).get();
-    const items = snap.docs
-      .slice(offset, offset + limit)
-      .map((d) => ({ id: d.id, ...d.data() }));
-    return { items, hasMore: snap.size > limit };
+    if (cursor) {
+      const cursorSnapshot = await db
+        .collection(`workspaces/${workspaceId}/activities`)
+        .doc(cursor)
+        .get();
+      if (!cursorSnapshot.exists) {
+        throw Errors.validation("Invalid activity cursor");
+      }
+      q = q.startAfter(cursorSnapshot);
+    }
+    const snapshot = await q.limit(limit + 1).get();
+    const hasMore = snapshot.docs.length > limit;
+    const docs = snapshot.docs.slice(0, limit);
+    const items = docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return {
+      items,
+      hasMore,
+      nextCursor: hasMore ? docs.at(-1)?.id || null : null,
+    };
   },
 };
 

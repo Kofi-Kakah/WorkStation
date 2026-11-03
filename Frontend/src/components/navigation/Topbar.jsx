@@ -16,7 +16,9 @@ import {
   Search,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/useAuth.jsx";
+import { api } from "../../services/apiClient.js";
 import Avatar from "../shared/Avatar.jsx";
 
 const PAGE_TITLES = [
@@ -40,7 +42,17 @@ const PAGE_TITLES = [
 export function Topbar({ className = "", onMenu, onToggleContext }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const unreadNotificationsQuery = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    enabled: Boolean(user?.uid),
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const response = await api.get("/notifications?limit=1");
+      return response.unreadCount || 0;
+    },
+  });
+  const unreadCount = unreadNotificationsQuery.data || 0;
   const displayName = profile?.displayName || "Account";
   const pageTitle =
     (location.pathname === "/"
@@ -134,28 +146,45 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           </HStack>
         </Button>
 
-        <Tooltip label="Notifications">
+        <Tooltip
+          label={
+            unreadNotificationsQuery.error
+              ? "Unread notifications are unavailable"
+              : unreadCount
+                ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`
+                : "Notifications"
+          }
+        >
           <Box position="relative">
             <IconButton
-              aria-label="Notifications"
+              aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
               icon={<Bell size={16} />}
               variant="ghost"
               size="sm"
               onClick={() => navigate("/notifications")}
             />
-            <Box
-              aria-hidden="true"
-              pointerEvents="none"
-              position="absolute"
-              top="7px"
-              right="7px"
-              w="6px"
-              h="6px"
-              borderRadius="full"
-              bg="danger"
-              border="1px solid"
-              borderColor="base"
-            />
+            {unreadCount > 0 && (
+              <Box
+                aria-hidden="true"
+                pointerEvents="none"
+                position="absolute"
+                top="1px"
+                right="1px"
+                minW="15px"
+                h="15px"
+                px="3px"
+                borderRadius="full"
+                bg="danger"
+                color="white"
+                border="1px solid"
+                borderColor="base"
+                fontSize="9px"
+                lineHeight="13px"
+                textAlign="center"
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Box>
+            )}
           </Box>
         </Tooltip>
 

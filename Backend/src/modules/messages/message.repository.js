@@ -4,6 +4,7 @@ import { Errors } from "../../shared/errors/index.js";
 import { generateId, serverTimestamp } from "../../shared/utils/index.js";
 import ChannelRepository from "../channels/channel.repository.js";
 import AttachmentRepository from "../attachments/attachment.repository.js";
+import NotificationService from "../../shared/services/notificationService.js";
 
 function timestampMillis(timestamp) {
   if (typeof timestamp?.toMillis === "function") return timestamp.toMillis();
@@ -104,16 +105,6 @@ export default class MessageRepository {
     if (!member.exists) throw Errors.forbidden("Join this channel to post");
 
     const mentions = [...new Set(input.mentions)];
-    const mentionedMembers = await Promise.all(
-      mentions.map((userId) =>
-        channelRef.collection("members").doc(userId).get(),
-      ),
-    );
-    if (mentionedMembers.some((snapshot) => !snapshot.exists)) {
-      throw Errors.validation(
-        "Mentioned users must be members of this conversation",
-      );
-    }
     const attachmentIds = await this.attachmentRepository.validateForAttach(
       channelId,
       uid,
@@ -155,8 +146,10 @@ export default class MessageRepository {
     const workspaceRef = this.db
       .collection("workspaces")
       .doc(channel.get("workspaceId"));
+    let pushNotifications = [];
     await this.db.runTransaction(async (transaction) => {
-      const [currentChannel, workspaceMember, channelMember, parent] =
+      pushNotifications = [];
+      const [currentChannel, workspaceMember, channelMember, parent, members] =
         await Promise.all([
           transaction.get(channelRef),
           transaction.get(workspaceRef.collection("members").doc(uid)),
@@ -166,6 +159,7 @@ export default class MessageRepository {
                 channelRef.collection("messages").doc(parentMessageId),
               )
             : Promise.resolve(null),
+          transaction.get(channelRef.collection("members")),
         ]);
       if (
         !currentChannel.exists ||
@@ -183,12 +177,90 @@ export default class MessageRepository {
       ) {
         throw Errors.notFound("Thread message not found");
       }
+      const mentionedMembers = await Promise.all(
+        mentions.map((userId) =>
+          transaction.get(channelRef.collection("members").doc(userId)),
+        ),
+      );
+      if (mentionedMembers.some((snapshot) => !snapshot.exists)) {
+        throw Errors.validation(
+          "Mentioned users must be members of this conversation",
+        );
+      }
+
+      const targets = new Map();
+      if (["direct", "group"].includes(currentChannel.get("type"))) {
+        members.docs.forEach((snapshot) => {
+          if (snapshot.id !== uid) {
+            targets.set(snapshot.id, {
+              type: "message",
+              title: "New direct message",
+            });
+          }
+        });
+      }
+      if (parent?.exists && parent.get("senderId") !== uid) {
+        targets.set(parent.get("senderId"), {
+          type: "reply",
+          title: "New reply to your message",
+        });
+      }
+      mentions.forEach((userId) => {
+        if (userId !== uid) {
+          targets.set(userId, { type: "mention", title: "You were mentioned" });
+        }
+      });
+      const recipientProfiles = new Map(
+        await Promise.all(
+          [...targets.keys()].map(async (userId) => [
+            userId,
+            await transaction.get(this.db.collection("users").doc(userId)),
+          ]),
+        ),
+      );
+
       transaction.create(messageRef, message);
       transaction.update(channelRef, {
         lastMessageAt: timestamp,
         updatedAt: timestamp,
       });
+      const linkPrefix =
+        currentChannel.get("type") === "channel" ? "/channels" : "/dm";
+      for (const [userId, target] of targets) {
+        const notification = NotificationService.recordWithinTransaction(
+          transaction,
+          this.db,
+          {
+            userId,
+            workspaceId: currentChannel.get("workspaceId"),
+            type: target.type,
+            title: target.title,
+            body: input.content || "Shared an attachment",
+            resource: {
+              type: "message",
+              id: messageId,
+              channelId,
+            },
+            link: `${linkPrefix}?channelId=${encodeURIComponent(channelId)}&messageId=${encodeURIComponent(messageId)}`,
+            actorId: uid,
+            dedupeKey: `message-${messageId}-${userId}`,
+            recipientProfile: recipientProfiles.get(userId)?.data(),
+          },
+        );
+        if (notification?.pushEnabled) {
+          pushNotifications.push({ userId, payload: notification.payload });
+        }
+      }
     });
+    await Promise.all(
+      pushNotifications.map((notification) =>
+        NotificationService.dispatchPush(
+          notification.userId,
+          notification.payload,
+          this.db,
+        ),
+      ),
+    );
     return this._hydrate(await messageRef.get(), uid);
   }
 

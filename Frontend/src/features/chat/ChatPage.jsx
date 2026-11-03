@@ -785,7 +785,18 @@ export default function ChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDirectRoute = location.pathname.startsWith("/dm");
-  const sourceConversation = location.state?.sourceConversation;
+  const sourceConversation = useMemo(() => {
+    if (location.state?.sourceConversation) {
+      return location.state.sourceConversation;
+    }
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.has("channelId")
+      ? {
+          channelId: searchParams.get("channelId"),
+          messageId: searchParams.get("messageId"),
+        }
+      : null;
+  }, [location.search, location.state?.sourceConversation]);
   const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
   const scopeKey = `${activeWorkspace?.id || ""}:${isDirectRoute ? "dm" : "channel"}`;
   const [activeSelection, setActiveSelection] = useState({

@@ -14,11 +14,11 @@ import ProjectDetailPage from "../features/projects/ProjectDetailPage.jsx";
 import InvitationResponsePage from "../features/workspace/InvitationResponsePage.jsx";
 import ChatPage from "../features/chat/ChatPage.jsx";
 import IssuesPage from "../features/issues/IssuesPage.jsx";
+import NotificationsPage from "../features/notifications/NotificationsPage.jsx";
 import {
   mockProjects,
   mockIssues,
   mockChannels,
-  mockNotifications,
 } from "../features/dashboard/mockData.js";
 
 const BoardsPage = lazy(() => import("../features/boards/BoardsPage.jsx"));
@@ -108,6 +108,14 @@ export default function AppRoutes() {
         }
       />
       <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/channels"
         element={
           <ProtectedRoute>
@@ -163,7 +171,6 @@ export default function AppRoutes() {
               projects={mockProjects}
               issues={mockIssues}
               channels={mockChannels}
-              notifications={mockNotifications}
             />
           </ProtectedRoute>
         }
@@ -176,7 +183,6 @@ export default function AppRoutes() {
               projects={mockProjects}
               issues={mockIssues}
               channels={mockChannels}
-              notifications={mockNotifications}
             />
           </ProtectedRoute>
         }

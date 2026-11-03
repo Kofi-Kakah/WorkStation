@@ -64,6 +64,66 @@ describe("MessageRepository", () => {
     expect(db.writes).toHaveLength(0);
   });
 
+  it("creates a notification for a mentioned conversation member", async () => {
+    const documents = initialChannel();
+    documents.set("channels/channel-1/members/member-2", {
+      userId: "member-2",
+    });
+    documents.set("users/member-2", {
+      displayName: "Alex",
+      notificationPreferences: { inApp: true, push: false },
+    });
+    const db = createFakeFirestore(documents);
+    const repository = new MessageRepository(db);
+
+    await repository.create("channel-1", "member-1", {
+      content: "Can you review this?",
+      parentMessageId: null,
+      mentions: ["member-2"],
+    });
+
+    const notification = db.writes.find(({ path }) =>
+      path.startsWith("users/member-2/notifications/"),
+    );
+    expect(notification.value).toMatchObject({
+      title: "You were mentioned",
+      type: "mention",
+      actorId: "member-1",
+      resource: { type: "message", channelId: "channel-1" },
+    });
+  });
+
+  it("notifies other members when a direct message is sent", async () => {
+    const documents = initialChannel({
+      type: "direct",
+      visibility: "private",
+    });
+    documents.set("channels/channel-1/members/member-2", {
+      userId: "member-2",
+    });
+    documents.set("users/member-2", {
+      displayName: "Alex",
+      notificationPreferences: { inApp: true, push: false },
+    });
+    const db = createFakeFirestore(documents);
+    const repository = new MessageRepository(db);
+
+    await repository.create("channel-1", "member-1", {
+      content: "Are you available?",
+      parentMessageId: null,
+      mentions: [],
+    });
+
+    expect(
+      db.writes.find(({ path }) =>
+        path.startsWith("users/member-2/notifications/"),
+      ).value,
+    ).toMatchObject({
+      title: "New direct message",
+      type: "message",
+    });
+  });
+
   it("uses document cursors to paginate messages without skipping equal timestamps", async () => {
     const documents = initialChannel();
     const timestamp = new Date("2025-01-01T12:00:00.000Z");

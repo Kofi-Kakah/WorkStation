@@ -22,8 +22,10 @@ import {
   Hash,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import GlassCard from "../../components/ui/GlassCard.jsx";
 import { useAuth } from "../../contexts/useAuth.jsx";
+import { api } from "../../services/apiClient.js";
 
 const HEATMAP = [
   [0, 0, 1, 2, 1, 0, 1, 0],
@@ -505,16 +507,22 @@ function IssueActivity({ issues }) {
 /**
  * Workspace overview built with mock data for the approved design-system stage.
  *
- * @param {{ projects?: Array, issues?: Array, channels?: Array, notifications?: Array }} props
+ * @param {{ projects?: Array, issues?: Array, channels?: Array }} props
  */
 export function DashboardPage({
   projects = [],
   issues = [],
   channels = [],
-  notifications = [],
 }) {
   const navigate = useNavigate();
   const { activeWorkspace } = useAuth();
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async () => {
+      const response = await api.get("/notifications?limit=1");
+      return response.unreadCount || 0;
+    },
+  });
   const openIssues = issues.filter((issue) => issue.status !== "done");
   const assignedIssues = issues.filter((issue) => issue.assignee).length;
   const projectProgress = projects.length
@@ -523,9 +531,7 @@ export function DashboardPage({
           projects.length,
       )
     : 0;
-  const unreadNotifications = notifications.filter(
-    (notification) => !notification.read,
-  ).length;
+  const unreadNotifications = notificationsQuery.data;
 
   const metrics = [
     {
@@ -545,7 +551,9 @@ export function DashboardPage({
     {
       label: "Assigned issues",
       value: assignedIssues,
-      caption: `${unreadNotifications} unread updates`,
+      caption: notificationsQuery.isError
+        ? "Unread notification count unavailable"
+        : `${unreadNotifications ?? 0} unread updates`,
       icon: Users,
       trend: 6,
     },

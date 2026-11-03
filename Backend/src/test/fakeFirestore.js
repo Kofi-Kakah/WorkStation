@@ -91,6 +91,21 @@ export function createFakeFirestore(initialDocuments = new Map()) {
     limit(count) {
       return queryReference(path, filters, ordering, count, startAfterPath);
     },
+    count() {
+      return {
+        get: async () => ({
+          data: () => ({
+            count: querySnapshot(
+              path,
+              filters,
+              ordering,
+              maxResults,
+              startAfterPath,
+            ).size,
+          }),
+        }),
+      };
+    },
     startAfter(snapshot) {
       return queryReference(
         path,
@@ -117,13 +132,9 @@ export function createFakeFirestore(initialDocuments = new Map()) {
 
   function collectionReference(path) {
     return {
+      ...queryReference(path),
       path,
       doc: (id) => documentReference(`${path}/${id}`),
-      where: (field, operator, value) =>
-        queryReference(path).where(field, operator, value),
-      orderBy: (field, direction) =>
-        queryReference(path).orderBy(field, direction),
-      get: async () => querySnapshot(path),
     };
   }
 

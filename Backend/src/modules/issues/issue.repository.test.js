@@ -58,6 +58,45 @@ describe("IssueRepository", () => {
     ).rejects.toMatchObject({ statusCode: 404 });
   });
 
+  it("notifies an assignee when an issue is assigned", async () => {
+    const documents = buildFixture(
+      new Map([
+        ["issues/issue-1", {
+          projectId: "project-1",
+          workspaceId: "workspace-1",
+          issueKey: "PROJ-1",
+          title: "Ship onboarding",
+          status: "todo",
+          priority: "medium",
+          reporterId: "member-1",
+          assigneeId: null,
+        }],
+        ["users/member-1", { displayName: "Jordan" }],
+        [
+          "users/member-2",
+          {
+            displayName: "Alex",
+            notificationPreferences: { inApp: true, push: false },
+          },
+        ],
+      ]),
+    );
+    const db = createFakeFirestore(documents);
+    const repository = new IssueRepository(db);
+
+    await repository.updateAssignee("issue-1", "member-1", "member-2");
+
+    expect(
+      db.writes.find(({ path }) =>
+        path.startsWith("users/member-2/notifications/"),
+      ).value,
+    ).toMatchObject({
+      title: "You were assigned an issue",
+      resource: { type: "issue", id: "issue-1" },
+      actorId: "member-1",
+    });
+  });
+
   it("moves linked board placements when an issue status changes", async () => {
     const documents = buildFixture(
       new Map([
@@ -166,5 +205,49 @@ describe("IssueRepository", () => {
 
     expect(comment).toMatchObject({ issueId: "issue-1", content: "Need design sign-off." });
     expect(comments).toHaveLength(1);
+  });
+
+  it("notifies the other issue participant when a comment is added", async () => {
+    const documents = buildFixture(
+      new Map([
+        [
+          "issues/issue-1",
+          {
+            projectId: "project-1",
+            workspaceId: "workspace-1",
+            issueKey: "PROJ-1",
+            title: "Ship onboarding",
+            status: "todo",
+            priority: "medium",
+            reporterId: "member-1",
+            assigneeId: "member-2",
+          },
+        ],
+        ["users/member-1", { displayName: "Jordan" }],
+        [
+          "users/member-2",
+          {
+            displayName: "Alex",
+            notificationPreferences: { inApp: true, push: false },
+          },
+        ],
+      ]),
+    );
+    const db = createFakeFirestore(documents);
+    const repository = new IssueRepository(db);
+
+    await repository.createComment("issue-1", "member-1", {
+      content: "Please review the new implementation.",
+    });
+
+    expect(
+      db.writes.find(({ path }) =>
+        path.startsWith("users/member-2/notifications/"),
+      ).value,
+    ).toMatchObject({
+      title: "New comment on an issue",
+      resource: { type: "issue", id: "issue-1" },
+      actorId: "member-1",
+    });
   });
 });

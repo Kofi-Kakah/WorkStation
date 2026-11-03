@@ -11,6 +11,8 @@ import attachmentRoutes from "../modules/attachments/attachment.routes.js";
 import boardRoutes from "../modules/boards/board.routes.js";
 import issueRoutes from "../modules/issues/issue.routes.js";
 import integrationRoutes from "../modules/integrations/integration.routes.js";
+import notificationRoutes from "../modules/notifications/notification.routes.js";
+import activityRoutes from "../modules/activities/activity.routes.js";
 
 const router = Router();
 
@@ -27,5 +29,7 @@ router.use("/messages", messageRoutes);
 router.use("/boards", boardRoutes);
 router.use("/issues", issueRoutes);
 router.use("/integrations", integrationRoutes);
+router.use("/v1/notifications", notificationRoutes);
+router.use("/v1/activities", activityRoutes);
 
 export default router;

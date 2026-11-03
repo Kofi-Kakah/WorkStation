@@ -14,8 +14,10 @@ export default class IntegrationRepository {
   async convertMessageToIssue(uid, input) {
     const channelRef = this.db.collection("channels").doc(input.channelId);
     const messageRef = channelRef.collection("messages").doc(input.messageId);
+    let pushNotification = null;
 
-    return this.db.runTransaction(async (transaction) => {
+    const result = await this.db.runTransaction(async (transaction) => {
+      pushNotification = null;
       const [channelSnapshot, messageSnapshot, actorProfile] = await Promise.all([
         transaction.get(channelRef),
         transaction.get(messageRef),
@@ -82,6 +84,12 @@ export default class IntegrationRepository {
         };
       }
 
+      const assigneeProfile =
+        input.assigneeId && input.assigneeId !== uid
+          ? await transaction.get(
+              this.db.collection("users").doc(input.assigneeId),
+            )
+          : null;
       const issue = await this.issueRepository.createWithinTransaction(
         transaction,
         input.projectId,
@@ -122,20 +130,39 @@ export default class IntegrationRepository {
         },
       );
       if (issue.assigneeId && issue.assigneeId !== uid) {
-        NotificationService.recordWithinTransaction(transaction, this.db, {
-          userId: issue.assigneeId,
-          workspaceId: channel.workspaceId,
-          type: "info",
-          title: "You were assigned an issue",
-          body: `${issue.issueKey}: ${issue.title}`,
-          resource: { type: "issue", id: issue.id },
-          link: `/issues/${issue.id}`,
-          actorId: uid,
-          dedupeKey: `issue-created-${issue.id}`,
-        });
+        const notification = NotificationService.recordWithinTransaction(
+          transaction,
+          this.db,
+          {
+            userId: issue.assigneeId,
+            workspaceId: channel.workspaceId,
+            type: "issue",
+            title: "You were assigned an issue",
+            body: `${issue.issueKey}: ${issue.title}`,
+            resource: { type: "issue", id: issue.id },
+            link: `/issues/${issue.id}`,
+            actorId: uid,
+            dedupeKey: `issue-created-${issue.id}`,
+            recipientProfile: assigneeProfile?.data(),
+          },
+        );
+        if (notification?.pushEnabled) {
+          pushNotification = {
+            userId: issue.assigneeId,
+            payload: notification.payload,
+          };
+        }
       }
 
       return { issue, alreadyConverted: false };
     });
+    if (pushNotification) {
+      await NotificationService.dispatchPush(
+        pushNotification.userId,
+        pushNotification.payload,
+        this.db,
+      );
+    }
+    return result;
   }
 }

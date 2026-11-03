@@ -6,6 +6,7 @@ import {
   normalizeIssueStatus,
   statusForBoardList,
 } from "../../shared/services/issueWorkflowService.js";
+import NotificationService from "../../shared/services/notificationService.js";
 import { generateId, serverTimestamp } from "../../shared/utils/index.js";
 import IssueRepository from "../issues/issue.repository.js";
 
@@ -297,7 +298,9 @@ export default class BoardRepository {
     const issueRef = this.db.collection("issues").doc(issueId);
     const timestamp = serverTimestamp();
     let position;
+    let pushNotifications = [];
     await this.db.runTransaction(async (transaction) => {
+      pushNotifications = [];
       const access = await this._boardAccess(transaction, boardId, uid);
       const [list, issue, existingCard, cards, boardCards] = await Promise.all([
         transaction.get(listRef),
@@ -342,7 +345,11 @@ export default class BoardRepository {
           issueId,
           uid,
           { status: targetStatus },
-          { skipBoardId: boardId },
+          {
+            skipBoardId: boardId,
+            onNotification: (notification) =>
+              pushNotifications.push(notification),
+          },
         );
       }
       position = (cards.docs[0]?.get("position") || 0) + POSITION_GAP;
@@ -355,6 +362,15 @@ export default class BoardRepository {
         updatedAt: timestamp,
       });
     });
+    await Promise.all(
+      pushNotifications.map((notification) =>
+        NotificationService.dispatchPush(
+          notification.userId,
+          notification.payload,
+          this.db,
+        ),
+      ),
+    );
     return {
       id: cardId,
       issueId,
@@ -369,7 +385,9 @@ export default class BoardRepository {
     const boardRef = this.db.collection(COLLECTION).doc(boardId);
     const cardRef = boardRef.collection("cards").doc(cardId);
     const targetListRef = boardRef.collection("lists").doc(listId);
+    let pushNotifications = [];
     await this.db.runTransaction(async (transaction) => {
+      pushNotifications = [];
       const access = await this._boardAccess(transaction, boardId, uid);
       const cardSnapshot = await transaction.get(cardRef);
       if (!cardSnapshot.exists) throw Errors.notFound("Card not found");
@@ -421,7 +439,11 @@ export default class BoardRepository {
           issue.id,
           uid,
           { status: targetStatus },
-          { skipBoardId: boardId },
+          {
+            skipBoardId: boardId,
+            onNotification: (notification) =>
+              pushNotifications.push(notification),
+          },
         );
       }
 
@@ -460,6 +482,15 @@ export default class BoardRepository {
         });
       });
     });
+    await Promise.all(
+      pushNotifications.map((notification) =>
+        NotificationService.dispatchPush(
+          notification.userId,
+          notification.payload,
+          this.db,
+        ),
+      ),
+    );
   }
 
   async removeCard(boardId, cardId, uid) {

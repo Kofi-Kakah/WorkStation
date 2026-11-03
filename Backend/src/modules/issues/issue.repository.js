@@ -214,9 +214,72 @@ export default class IssueRepository {
   }
 
   async create(projectId, uid, input) {
-    return this.db.runTransaction((transaction) =>
-      this.createWithinTransaction(transaction, projectId, uid, input),
-    );
+    let pushNotification = null;
+    const issue = await this.db.runTransaction(async (transaction) => {
+      pushNotification = null;
+      const [actorProfile, recipientProfile] = await Promise.all([
+        transaction.get(this.db.collection("users").doc(uid)),
+        input.assigneeId && input.assigneeId !== uid
+          ? transaction.get(
+              this.db.collection("users").doc(input.assigneeId),
+            )
+          : Promise.resolve(null),
+      ]);
+      const createdIssue = await this.createWithinTransaction(
+        transaction,
+        projectId,
+        uid,
+        input,
+      );
+      const activity = ActivityService.recordWithinTransaction(
+        transaction,
+        this.db,
+        createdIssue.workspaceId,
+        {
+          actorId: uid,
+          actorName: actorProfile?.get("displayName"),
+          action: "issue.created",
+          resource: {
+            type: "issue",
+            id: createdIssue.id,
+            key: createdIssue.issueKey,
+          },
+        },
+      );
+      if (createdIssue.assigneeId && createdIssue.assigneeId !== uid) {
+        const notification = NotificationService.recordWithinTransaction(
+          transaction,
+          this.db,
+          {
+            userId: createdIssue.assigneeId,
+            workspaceId: createdIssue.workspaceId,
+            type: "issue",
+            title: "You were assigned an issue",
+            body: `${createdIssue.issueKey}: ${createdIssue.title}`,
+            resource: { type: "issue", id: createdIssue.id },
+            link: `/issues/${createdIssue.id}`,
+            actorId: uid,
+            dedupeKey: activity ? `issue-created-${activity.id}` : null,
+            recipientProfile: recipientProfile?.data(),
+          },
+        );
+        if (notification?.pushEnabled) {
+          pushNotification = {
+            userId: createdIssue.assigneeId,
+            payload: notification.payload,
+          };
+        }
+      }
+      return createdIssue;
+    });
+    if (pushNotification) {
+      await NotificationService.dispatchPush(
+        pushNotification.userId,
+        pushNotification.payload,
+        this.db,
+      );
+    }
+    return issue;
   }
 
   async get(issueId, uid) {
@@ -227,9 +290,27 @@ export default class IssueRepository {
   }
 
   async update(issueId, uid, updates) {
-    return this.db.runTransaction((transaction) =>
-      this.updateWithinTransaction(transaction, issueId, uid, updates),
+    let pushNotifications = [];
+    const issue = await this.db.runTransaction((transaction) => {
+      pushNotifications = [];
+      return this.updateWithinTransaction(
+        transaction,
+        issueId,
+        uid,
+        updates,
+        { onNotification: (notification) => pushNotifications.push(notification) },
+      );
+    });
+    await Promise.all(
+      pushNotifications.map((notification) =>
+        NotificationService.dispatchPush(
+          notification.userId,
+          notification.payload,
+          this.db,
+        ),
+      ),
     );
+    return issue;
   }
 
   async _boardPlacementUpdates(
@@ -305,7 +386,7 @@ export default class IssueRepository {
     issueId,
     uid,
     updates,
-    { skipBoardId = null } = {},
+    { skipBoardId = null, onNotification = null } = {},
   ) {
       const access = await this._issueAccess(transaction, issueId, uid);
       const issue = access.issue;
@@ -374,9 +455,28 @@ export default class IssueRepository {
 
       const statusChanged =
         updates.status && updates.status !== issue.status;
-      const actorProfile = statusChanged
+      const assigneeChanged =
+        updates.assigneeId !== undefined &&
+        nextIssue.assigneeId &&
+        nextIssue.assigneeId !== issue.assigneeId;
+      const actorProfile = statusChanged || assigneeChanged
         ? await transaction.get(this.db.collection("users").doc(uid))
         : null;
+      const notificationUserIds = new Set();
+      if (statusChanged && issue.assigneeId && issue.assigneeId !== uid) {
+        notificationUserIds.add(issue.assigneeId);
+      }
+      if (assigneeChanged && nextIssue.assigneeId !== uid) {
+        notificationUserIds.add(nextIssue.assigneeId);
+      }
+      const recipientProfiles = new Map(
+        await Promise.all(
+          [...notificationUserIds].map(async (userId) => [
+            userId,
+            await transaction.get(this.db.collection("users").doc(userId)),
+          ]),
+        ),
+      );
       nextIssue.updatedAt = serverTimestamp();
       transaction.update(access.issueRef, nextIssue);
       boardUpdates.forEach(({ ref, listId, position }) => {
@@ -407,16 +507,70 @@ export default class IssueRepository {
           },
         );
         if (issue.assigneeId && issue.assigneeId !== uid) {
-          NotificationService.recordWithinTransaction(transaction, this.db, {
-            userId: issue.assigneeId,
+          const notification = NotificationService.recordWithinTransaction(
+            transaction,
+            this.db,
+            {
+              userId: issue.assigneeId,
+              workspaceId: issue.workspaceId,
+              type: "issue",
+              title: "Issue status changed",
+              body: `${issue.issueKey || "An issue"} moved to ${nextIssue.status.replaceAll("_", " ")}.`,
+              resource: { type: "issue", id: issueId },
+              link: `/issues/${issueId}`,
+              actorId: uid,
+              dedupeKey: activity ? `issue-status-${activity.id}` : null,
+              recipientProfile: recipientProfiles.get(issue.assigneeId)?.data(),
+            },
+          );
+          if (notification?.pushEnabled) {
+            onNotification?.({
+              userId: issue.assigneeId,
+              payload: notification.payload,
+            });
+          }
+        }
+      }
+      if (assigneeChanged && nextIssue.assigneeId !== uid) {
+        const activity = ActivityService.recordWithinTransaction(
+          transaction,
+          this.db,
+          issue.workspaceId,
+          {
+            actorId: uid,
+            actorName: actorProfile?.get("displayName"),
+            action: "issue.assignee_changed",
+            resource: {
+              type: "issue",
+              id: issueId,
+              key: issue.issueKey,
+            },
+            context: {
+              fromAssigneeId: issue.assigneeId || null,
+              toAssigneeId: nextIssue.assigneeId,
+            },
+          },
+        );
+        const notification = NotificationService.recordWithinTransaction(
+          transaction,
+          this.db,
+          {
+            userId: nextIssue.assigneeId,
             workspaceId: issue.workspaceId,
-            type: "info",
-            title: "Issue status changed",
-            body: `${issue.issueKey || "An issue"} moved to ${nextIssue.status.replaceAll("_", " ")}.`,
+            type: "issue",
+            title: "You were assigned an issue",
+            body: `${issue.issueKey || "An issue"}: ${nextIssue.title}`,
             resource: { type: "issue", id: issueId },
             link: `/issues/${issueId}`,
             actorId: uid,
-            dedupeKey: activity ? `issue-status-${activity.id}` : null,
+            dedupeKey: activity ? `issue-assigned-${activity.id}` : null,
+            recipientProfile: recipientProfiles.get(nextIssue.assigneeId)?.data(),
+          },
+        );
+        if (notification?.pushEnabled) {
+          onNotification?.({
+            userId: nextIssue.assigneeId,
+            payload: notification.payload,
           });
         }
       }
@@ -439,8 +593,10 @@ export default class IssueRepository {
       .collection("comments")
       .doc(commentId);
     const timestamp = serverTimestamp();
+    let pushNotifications = [];
 
     await this.db.runTransaction(async (transaction) => {
+      pushNotifications = [];
       const access = await this._issueAccess(transaction, issueId, uid);
       const issue = access.issue;
       const allowedToComment =
@@ -449,6 +605,39 @@ export default class IssueRepository {
         throw Errors.forbidden("You cannot comment on this issue");
       }
 
+      const recipients = new Set(
+        [issue.assigneeId, issue.reporterId].filter(
+          (recipientId) => recipientId && recipientId !== uid,
+        ),
+      );
+      const [actorProfile, ...recipientProfiles] = await Promise.all([
+        transaction.get(this.db.collection("users").doc(uid)),
+        ...[...recipients].map((recipientId) =>
+          transaction.get(this.db.collection("users").doc(recipientId)),
+        ),
+      ]);
+      const profileById = new Map(
+        [...recipients].map((recipientId, index) => [
+          recipientId,
+          recipientProfiles[index],
+        ]),
+      );
+      const activity = ActivityService.recordWithinTransaction(
+        transaction,
+        this.db,
+        issue.workspaceId,
+        {
+          actorId: uid,
+          actorName: actorProfile.get("displayName"),
+          action: "issue.comment_added",
+          resource: {
+            type: "issue",
+            id: issueId,
+            key: issue.issueKey,
+          },
+          context: { commentId },
+        },
+      );
       transaction.create(commentRef, {
         id: commentId,
         issueId,
@@ -457,7 +646,42 @@ export default class IssueRepository {
         createdAt: timestamp,
         updatedAt: timestamp,
       });
+      recipients.forEach((recipientId) => {
+        const notification = NotificationService.recordWithinTransaction(
+          transaction,
+          this.db,
+          {
+            userId: recipientId,
+            workspaceId: issue.workspaceId,
+            type: "comment",
+            title: "New comment on an issue",
+            body: input.content.trim().slice(0, 240),
+            resource: { type: "issue", id: issueId },
+            link: `/issues/${issueId}`,
+            actorId: uid,
+            dedupeKey: activity
+              ? `issue-comment-${activity.id}-${recipientId}`
+              : null,
+            recipientProfile: profileById.get(recipientId)?.data(),
+          },
+        );
+        if (notification?.pushEnabled) {
+          pushNotifications.push({
+            userId: recipientId,
+            payload: notification.payload,
+          });
+        }
+      });
     });
+    await Promise.all(
+      pushNotifications.map((notification) =>
+        NotificationService.dispatchPush(
+          notification.userId,
+          notification.payload,
+          this.db,
+        ),
+      ),
+    );
 
     return {
       id: commentId,
