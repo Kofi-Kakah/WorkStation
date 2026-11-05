@@ -1,6 +1,10 @@
 import { getFirestore } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
-import { canManageProject } from "../../shared/services/permissionService.js";
+import {
+  canAccessProject,
+  canContributeToProject,
+  canManageProject,
+} from "../../shared/services/permissionService.js";
 import {
   normalizeIssueStatus,
   statusForBoardList,
@@ -54,12 +58,22 @@ export default class IssueRepository {
 
     const workspaceRole = workspaceMember.get("role");
     const projectRole = projectMember.exists ? projectMember.get("role") : null;
+    const visibility = project.get("visibility") || "workspace";
+    if (!canAccessProject(workspaceRole, projectRole, visibility)) {
+      throw Errors.notFound("Project not found");
+    }
     return {
       projectRef,
       project: project.data(),
       workspaceRole,
       projectRole,
+      visibility,
       canManage: canManageProject(workspaceRole, projectRole),
+      canContribute: canContributeToProject(
+        workspaceRole,
+        projectRole,
+        visibility,
+      ),
     };
   }
 
@@ -177,6 +191,9 @@ export default class IssueRepository {
     const access =
       projectAccess ||
       (await this._projectAccess(transaction, projectId, uid));
+    if (!access.canContribute) {
+      throw Errors.forbidden("You cannot create issues in this project");
+    }
     const project = access.project;
     const normalizedStatus = this._normalizeStatus(input.status);
     const issueData = {
@@ -614,9 +631,7 @@ export default class IssueRepository {
       pushNotifications = [];
       const access = await this._issueAccess(transaction, issueId, uid);
       const issue = access.issue;
-      const allowedToComment =
-        access.canManage || issue.reporterId === uid || issue.assigneeId === uid;
-      if (!allowedToComment) {
+      if (!access.canContribute) {
         throw Errors.forbidden("You cannot comment on this issue");
       }
 

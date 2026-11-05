@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import { getFirestore } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
-import { canManageProject } from "../../shared/services/permissionService.js";
+import {
+  canAccessProject,
+  canManageProject,
+} from "../../shared/services/permissionService.js";
 import {
   normalizeIssueStatus,
   statusForBoardList,
@@ -49,8 +52,11 @@ export default class BoardRepository {
     const workspaceRole = workspaceMember.get("role");
     const projectRole = projectMember.exists ? projectMember.get("role") : null;
     if (
-      project.get("visibility") === "restricted" &&
-      !canManageProject(workspaceRole, projectRole)
+      !canAccessProject(
+        workspaceRole,
+        projectRole,
+        project.get("visibility") || "workspace",
+      )
     ) {
       throw Errors.notFound("Project not found");
     }

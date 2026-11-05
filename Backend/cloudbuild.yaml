@@ -1,0 +1,66 @@
+# Cloud Build pipeline for the WorkStation API.
+#
+# Run from the repository root so the build context contains Backend/:
+#   gcloud builds submit . --config Backend/cloudbuild.yaml --project <PROJECT_ID>
+#
+# One-time prerequisites are documented in docs/DEPLOYMENT.md. The Cloud Run
+# service account must have Firestore, Storage, and Firebase Auth permissions;
+# the Admin SDK obtains credentials from the Cloud Run metadata server (ADC),
+# so no service-account key is stored in the image or in this file.
+
+substitutions:
+  _REGION: us-central1
+  _SERVICE: workstation-api
+  _REPOSITORY: workstation
+  _FIREBASE_PROJECT_ID: workshop-111f1
+  _FIREBASE_STORAGE_BUCKET: workshop-111f1.firebasestorage.app
+  _CORS_ORIGINS: https://workshop-111f1.web.app,https://workshop-111f1.firebaseapp.com
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
+    dir: Backend
+    args:
+      - build
+      - --tag
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+      - --tag
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:latest
+      - .
+
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}
+
+  - id: deploy-cloud-run
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --service-account=workstation-api@$PROJECT_ID.iam.gserviceaccount.com
+      - --port=8080
+      - --memory=512Mi
+      - --cpu=1
+      - --concurrency=80
+      # SSE streams are long-lived; keep requests open while clients listen.
+      - --timeout=3600
+      - --min-instances=0
+      - --max-instances=10
+      # CORS_ORIGINS contains commas, so use "|" as the env-var delimiter.
+      - "--set-env-vars=^|^NODE_ENV=production|TRUST_PROXY=true|LOG_LEVEL=info|FIREBASE_PROJECT_ID=${_FIREBASE_PROJECT_ID}|FIREBASE_STORAGE_BUCKET=${_FIREBASE_STORAGE_BUCKET}|CORS_ORIGINS=${_CORS_ORIGINS}"
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:latest

@@ -446,9 +446,8 @@ function MessageComposer({
     mutationFn: async (body) => {
       const attachmentIds = [];
       for (const file of files) {
-        const uploadId = window.crypto.randomUUID();
-        await api.putBinary(
-          `/channels/${channelId}/uploads/${uploadId}`,
+        const response = await api.putBinary(
+          `/channels/${channelId}/uploads`,
           file,
           {
             "Content-Type": "application/octet-stream",
@@ -456,7 +455,10 @@ function MessageComposer({
             "X-File-Type": file.type,
           },
         );
-        attachmentIds.push(uploadId);
+        if (!response?.attachment?.id) {
+          throw new Error("The server did not confirm the upload");
+        }
+        attachmentIds.push(response.attachment.id);
       }
       return api.post(`/channels/${channelId}/messages`, {
         ...body,

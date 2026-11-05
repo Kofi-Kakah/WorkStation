@@ -72,6 +72,57 @@ describe("ProjectRepository", () => {
     });
   });
 
+  it("shows a restricted project to its explicit project member", async () => {
+    const db = createFakeFirestore(
+      new Map([
+        [
+          "projects/project-1",
+          {
+            workspaceId: "workspace-1",
+            name: "Private",
+            status: "active",
+            visibility: "restricted",
+          },
+        ],
+        ["workspaces/workspace-1", { name: "Team" }],
+        ["workspaces/workspace-1/members/member-1", { role: "member" }],
+        ["projects/project-1/members/member-1", { role: "member" }],
+      ]),
+    );
+    const repository = new ProjectRepository(db);
+
+    await expect(repository.get("project-1", "member-1")).resolves.toMatchObject({
+      id: "project-1",
+      visibility: "restricted",
+    });
+  });
+
+  it("does not list workspace-visible projects for guests without membership", async () => {
+    const db = createFakeFirestore(
+      new Map([
+        [
+          "projects/project-1",
+          {
+            workspaceId: "workspace-1",
+            name: "Public to the team",
+            status: "active",
+            visibility: "workspace",
+          },
+        ],
+        ["workspaces/workspace-1", { name: "Team" }],
+        ["workspaces/workspace-1/members/guest-1", { role: "guest" }],
+      ]),
+    );
+    const repository = new ProjectRepository(db);
+
+    await expect(
+      repository.listForWorkspace("workspace-1", "guest-1"),
+    ).resolves.toEqual([]);
+    await expect(repository.get("project-1", "guest-1")).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+
   it("prevents removing the last project manager", async () => {
     const db = createFakeFirestore(
       new Map([

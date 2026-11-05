@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedContent } from "./attachment.repository.js";
+import AttachmentRepository, {
+  isAllowedContent,
+} from "./attachment.repository.js";
 
 describe("AttachmentRepository content validation", () => {
   it("accepts files only when their bytes match the declared safe type", () => {
@@ -21,5 +23,25 @@ describe("AttachmentRepository content validation", () => {
     expect(
       isAllowedContent(Buffer.from([0x74, 0x00, 0x78]), "text/plain"),
     ).toBe(false);
+  });
+
+  it("rejects storage paths that could escape the channel prefix", async () => {
+    const repository = new AttachmentRepository(
+      {},
+      {
+        getAccess: async () => {
+          throw new Error("access lookup must not run for an invalid ID");
+        },
+      },
+      null,
+    );
+
+    await expect(
+      repository.upload("channel-1", "member-1", "../../users/owner", {
+        buffer: Buffer.from("%PDF-1.7\n", "ascii"),
+        fileName: "report.pdf",
+        mimeType: "application/pdf",
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 });

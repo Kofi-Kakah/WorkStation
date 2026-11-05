@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import MessageRepository from "./message.repository.js";
 import { createFakeFirestore } from "../../test/fakeFirestore.js";
 
@@ -184,6 +184,68 @@ describe("MessageRepository", () => {
     expect(
       [...firstPage.messages, ...secondPage.messages].map(({ id }) => id),
     ).toEqual(["message-2", "message-3", "message-1"]);
+  });
+
+  it("resolves a page of attachments with one batched lookup", async () => {
+    const documents = initialChannel();
+    for (const [index, id] of ["message-1", "message-2", "message-3"].entries()) {
+      documents.set(`channels/channel-1/messages/${id}`, {
+        senderId: "member-1",
+        content: id,
+        parentMessageId: null,
+        createdAt: new Date(Date.UTC(2025, 0, 1, 12, 0, index)),
+        attachmentIds: [`upload-${id}`],
+      });
+    }
+    const db = createFakeFirestore(documents);
+    const getForMessages = vi.fn(async (channelId, uid, uploadIds) =>
+      uploadIds.map((uploadId) => ({ id: uploadId, fileName: `${uploadId}.pdf` })),
+    );
+    const repository = new MessageRepository(
+      db,
+      {
+        getAccess: async () => ({
+          channelRef: db.collection("channels").doc("channel-1"),
+        }),
+      },
+      { getForMessages },
+    );
+
+    const page = await repository.list("channel-1", "member-1", { limit: 10 });
+
+    expect(getForMessages).toHaveBeenCalledTimes(1);
+    expect(getForMessages).toHaveBeenCalledWith(
+      "channel-1",
+      "member-1",
+      expect.arrayContaining([
+        "upload-message-1",
+        "upload-message-2",
+        "upload-message-3",
+      ]),
+    );
+    expect(
+      page.messages.every((message) => message.attachments.length === 1),
+    ).toBe(true);
+  });
+
+  it("subscribes to message and access changes and removes every listener", async () => {
+    const documents = initialChannel({ visibility: "private" });
+    const db = createFakeFirestore(documents);
+    const repository = new MessageRepository(db);
+
+    const unsubscribe = await repository.subscribe(
+      "channel-1",
+      "member-1",
+      vi.fn(),
+      vi.fn(),
+    );
+
+    expect(db.snapshotListeners).toHaveLength(3);
+    expect(db.snapshotListeners.every((listener) => listener.active)).toBe(true);
+
+    unsubscribe();
+
+    expect(db.snapshotListeners.every((listener) => !listener.active)).toBe(true);
   });
 
   it("prevents editing another member's message", async () => {

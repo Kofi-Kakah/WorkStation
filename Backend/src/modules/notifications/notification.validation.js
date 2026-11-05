@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const id = z.string().trim().min(1).max(128);
+import { idSchema as id } from "../../shared/validation/ids.js";
 const pageQuery = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: id.optional(),

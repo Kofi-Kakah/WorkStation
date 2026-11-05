@@ -10,15 +10,11 @@ export default class SprintRepository {
   }
 
   async _access(transaction, projectId, uid) {
-    const access = await this.issueRepository.getProjectAccessWithinTransaction(
+    return this.issueRepository.getProjectAccessWithinTransaction(
       transaction,
       projectId,
       uid,
     );
-    if (access.project.visibility === "restricted" && !access.canManage) {
-      throw Errors.notFound("Project not found");
-    }
-    return access;
   }
 
   async list(projectId, uid) {

@@ -19,5 +19,24 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("firebase")) return "firebase";
+          if (
+            id.includes("@chakra-ui") ||
+            id.includes("@emotion") ||
+            id.includes("framer-motion")
+          ) {
+            return "chakra";
+          }
+          if (id.includes("@tanstack")) return "query";
+          if (id.includes("@dnd-kit")) return "dnd";
+          if (id.includes("react")) return "react";
+          return undefined;
+        },
+      },
+    },
   },
 })

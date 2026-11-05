@@ -251,6 +251,110 @@ describe("IssueRepository", () => {
     });
   });
 
+  it("hides a restricted project's issues from workspace members without project membership", async () => {
+    const db = createFakeFirestore(
+      buildFixture(
+        new Map([
+          ["workspaces/workspace-1/members/member-3", { role: "member" }],
+          [
+            "projects/project-1",
+            {
+              workspaceId: "workspace-1",
+              key: "PROJ",
+              status: "active",
+              visibility: "restricted",
+            },
+          ],
+          [
+            "issues/issue-1",
+            { projectId: "project-1", title: "Confidential", status: "todo" },
+          ],
+        ]),
+      ),
+    );
+    const repository = new IssueRepository(db);
+
+    await expect(
+      repository.list("project-1", "member-3"),
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it("shows a restricted project's issues to its explicit project members", async () => {
+    const db = createFakeFirestore(
+      buildFixture(
+        new Map([
+          [
+            "projects/project-1",
+            {
+              workspaceId: "workspace-1",
+              key: "PROJ",
+              status: "active",
+              visibility: "restricted",
+            },
+          ],
+          [
+            "issues/issue-1",
+            { projectId: "project-1", title: "Confidential", status: "todo" },
+          ],
+        ]),
+      ),
+    );
+    const repository = new IssueRepository(db);
+
+    await expect(repository.list("project-1", "member-2")).resolves.toEqual([
+      expect.objectContaining({ id: "issue-1", title: "Confidential" }),
+    ]);
+  });
+
+  it("lets any project participant comment on an issue", async () => {
+    const db = createFakeFirestore(
+      buildFixture(
+        new Map([
+          [
+            "issues/issue-1",
+            {
+              projectId: "project-1",
+              title: "Alpha",
+              status: "todo",
+              reporterId: "member-2",
+              assigneeId: null,
+            },
+          ],
+        ]),
+      ),
+    );
+    const repository = new IssueRepository(db);
+
+    await expect(
+      repository.createComment("issue-1", "member-1", {
+        content: "Adding context from the design review.",
+      }),
+    ).resolves.toMatchObject({ issueId: "issue-1" });
+  });
+
+  it("denies guests without project membership from creating issues", async () => {
+    const db = createFakeFirestore(
+      buildFixture(
+        new Map([
+          ["workspaces/workspace-1/members/guest-1", { role: "guest" }],
+        ]),
+      ),
+    );
+    const repository = new IssueRepository(db);
+
+    await expect(
+      repository.create("project-1", "guest-1", {
+        projectId: "project-1",
+        title: "Guest issue",
+        description: "",
+        type: "task",
+        status: "todo",
+        priority: "medium",
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    expect(db.writes).toHaveLength(0);
+  });
+
   it("filters issues by assignee, due-date window, and sprint", async () => {
     const db = createFakeFirestore(
       buildFixture(

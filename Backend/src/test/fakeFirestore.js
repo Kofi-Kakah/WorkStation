@@ -1,6 +1,15 @@
 export function createFakeFirestore(initialDocuments = new Map()) {
   const documents = new Map(initialDocuments);
   const writes = [];
+  const snapshotListeners = [];
+
+  const registerSnapshotListener = (onNext, onError) => {
+    const entry = { onNext, onError, active: true };
+    snapshotListeners.push(entry);
+    return () => {
+      entry.active = false;
+    };
+  };
 
   const snapshot = (path) => {
     const data = documents.get(path);
@@ -115,6 +124,7 @@ export function createFakeFirestore(initialDocuments = new Map()) {
         snapshot.ref.path,
       );
     },
+    onSnapshot: registerSnapshotListener,
     get: async () =>
       querySnapshot(path, filters, ordering, maxResults, startAfterPath),
   });
@@ -124,6 +134,7 @@ export function createFakeFirestore(initialDocuments = new Map()) {
       path,
       collection: (name) => collectionReference(`${path}/${name}`),
       get: async () => snapshot(path),
+      onSnapshot: registerSnapshotListener,
       set: async (value, options) => applyWrite(["set", path, value, options]),
       create: async (value) => applyWrite(["create", path, value]),
       update: async (value) => applyWrite(["update", path, value]),
@@ -161,7 +172,16 @@ export function createFakeFirestore(initialDocuments = new Map()) {
 
   return {
     writes,
+    snapshotListeners,
     collection: collectionReference,
+    reset(nextDocuments = new Map()) {
+      documents.clear();
+      for (const [path, value] of nextDocuments) {
+        documents.set(path, value);
+      }
+      writes.length = 0;
+      snapshotListeners.length = 0;
+    },
     async runTransaction(callback) {
       const operations = [];
       const transaction = {
@@ -204,6 +224,10 @@ export function createFakeFirestore(initialDocuments = new Map()) {
     },
     get(path) {
       return documents.get(path);
+    },
+    seed(path, value) {
+      documents.set(path, value);
+      return value;
     },
   };
 }

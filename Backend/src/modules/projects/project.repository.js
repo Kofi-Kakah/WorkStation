@@ -1,6 +1,7 @@
 import { getFirestore } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
 import {
+  canAccessProject,
   canCreateProject,
   canDeleteProject,
   canManageProject,
@@ -58,8 +59,11 @@ export default class ProjectRepository {
             ? membership.get("role")
             : null;
           if (
-            snapshot.get("visibility") === "restricted" &&
-            !canManageProject(workspaceRole, projectRole)
+            !canAccessProject(
+              workspaceRole,
+              projectRole,
+              snapshot.get("visibility") || "workspace",
+            )
           ) {
             return null;
           }
@@ -147,8 +151,11 @@ export default class ProjectRepository {
         ? projectMember.get("role")
         : null;
       if (
-        project.get("visibility") === "restricted" &&
-        !canManageProject(workspaceMember.get("role"), projectRole)
+        !canAccessProject(
+          workspaceMember.get("role"),
+          projectRole,
+          project.get("visibility") || "workspace",
+        )
       ) {
         throw Errors.notFound("Project not found");
       }

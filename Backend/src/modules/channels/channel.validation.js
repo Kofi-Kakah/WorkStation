@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const id = z.string().trim().min(1).max(128);
+import { idSchema as id } from "../../shared/validation/ids.js";
 
 export const channelParamsSchema = z.object({ channelId: id });
 export const channelMemberParamsSchema = z.object({

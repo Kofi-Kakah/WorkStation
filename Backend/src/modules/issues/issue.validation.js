@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { idSchema as id } from "../../shared/validation/ids.js";
 
-const id = z.string().trim().min(1).max(128);
 const title = z.string().trim().min(1).max(200);
 const description = z.string().trim().max(5000).default("");
 const typeEnum = z.enum(["epic", "story", "task", "bug", "subtask"]);
@@ -26,10 +26,10 @@ export const projectIssueQuerySchema = z.object({
   type: typeEnum.optional(),
   priority: priorityEnum.optional(),
   search: z.string().trim().max(200).optional(),
-  assigneeId: z.string().trim().max(128).optional(),
+  assigneeId: id.optional(),
   dueDateFrom: z.string().trim().max(30).optional(),
   dueDateTo: z.string().trim().max(30).optional(),
-  sprintId: z.string().trim().max(128).optional(),
+  sprintId: id.optional(),
 });
 
 export const createIssueSchema = z.object({
@@ -39,8 +39,8 @@ export const createIssueSchema = z.object({
   type: typeEnum.default("task"),
   status: statusEnum.default("backlog"),
   priority: priorityEnum.default("medium"),
-  assigneeId: z.string().trim().max(128).nullable().optional(),
-  parentIssueId: z.string().trim().max(128).nullable().optional(),
+  assigneeId: id.nullable().optional(),
+  parentIssueId: id.nullable().optional(),
   labels: z.array(z.string().trim().min(1).max(40)).max(25).optional(),
   dueDate: z.string().trim().max(30).optional(),
 });
@@ -52,8 +52,8 @@ export const updateIssueSchema = z
     type: typeEnum.optional(),
     status: statusEnum.optional(),
     priority: priorityEnum.optional(),
-    assigneeId: z.string().trim().max(128).nullable().optional(),
-    parentIssueId: z.string().trim().max(128).nullable().optional(),
+    assigneeId: id.nullable().optional(),
+    parentIssueId: id.nullable().optional(),
     labels: z.array(z.string().trim().min(1).max(40)).max(25).optional(),
     dueDate: z.string().trim().max(30).nullable().optional(),
   })
@@ -63,7 +63,7 @@ export const updateIssueSchema = z
 
 export const issueStatusSchema = z.object({ status: statusEnum });
 export const issueAssigneeSchema = z.object({
-  assigneeId: z.string().trim().max(128).nullable().optional(),
+  assigneeId: id.nullable().optional(),
 });
 export const issueCommentSchema = z.object({
   content: z.string().trim().min(1).max(4000),

@@ -20,4 +20,20 @@ export const authLimiter = rateLimit({
   },
 });
 
-export default { apiLimiter, authLimiter };
+/**
+ * Uploads are authenticated before this limiter runs, so key by user ID.
+ * This prevents one account from saturating Storage while sharing an IP.
+ */
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) =>
+    req.user?.uid ? `user:${req.user.uid}` : `ip:${req.ip}`,
+  message: {
+    error: "Too many uploads, please wait before trying again.",
+  },
+});
+
+export default { apiLimiter, authLimiter, uploadLimiter };

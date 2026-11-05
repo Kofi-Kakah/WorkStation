@@ -16,6 +16,10 @@ import env from "./config/env.js";
 export function createApp() {
   const app = express();
 
+  if (env.trustProxy) {
+    app.set("trust proxy", env.trustProxy);
+  }
+
   // Security headers.
   app.use(
     helmet({

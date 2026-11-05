@@ -24,6 +24,12 @@ export default cors({
     return callback(Errors.forbidden("Origin not allowed by CORS"));
   },
   methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Request-Id",
+    "X-File-Name",
+    "X-File-Type",
+  ],
   maxAge: 600,
 });

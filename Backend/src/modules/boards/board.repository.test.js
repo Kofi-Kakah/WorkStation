@@ -169,6 +169,44 @@ describe("BoardRepository", () => {
     expect(Number.isInteger(db.get("boards/board-1/cards/card-1").position)).toBe(true);
   });
 
+  it("renumbers a list when no integer gap remains between cards", async () => {
+    const documents = fixture();
+    documents.set("issues/issue-3", {
+      projectId: "project-1",
+      title: "Third task",
+      status: "todo",
+      priority: "low",
+    });
+    documents.set("boards/board-1/cards/card-1", {
+      issueId: "issue-1",
+      listId: "todo",
+      position: 1024,
+    });
+    documents.set("boards/board-1/cards/card-2", {
+      issueId: "issue-2",
+      listId: "todo",
+      position: 1025,
+    });
+    documents.set("boards/board-1/cards/card-3", {
+      issueId: "issue-3",
+      listId: "todo",
+      position: 1026,
+    });
+    const db = createFakeFirestore(documents);
+    const repository = new BoardRepository(db);
+
+    await repository.moveCard("board-1", "card-1", "member-1", {
+      listId: "todo",
+      position: 1,
+    });
+
+    const positions = ["card-2", "card-1", "card-3"].map(
+      (cardId) => db.get(`boards/board-1/cards/${cardId}`).position,
+    );
+    expect(positions).toEqual([1024, 2048, 3072]);
+    expect(positions.every(Number.isSafeInteger)).toBe(true);
+  });
+
   it("does not delete a list while it still contains cards", async () => {
     const documents = fixture();
     documents.set("boards/board-1/cards/card-1", {

@@ -11,6 +11,10 @@ export default class AttachmentController {
       if (!Buffer.isBuffer(req.body)) {
         return res.status(400).json({ error: "Upload body must be binary data" });
       }
+      const fileType = req.headers["x-file-type"];
+      if (typeof fileType !== "string" || !fileType) {
+        return res.status(400).json({ error: "Missing attachment file type" });
+      }
       let fileName;
       try {
         fileName = decodeURIComponent(req.headers["x-file-name"] || "");
@@ -20,11 +24,11 @@ export default class AttachmentController {
       const attachment = await this.repository.upload(
         req.params.channelId,
         req.user.uid,
-        req.params.uploadId || randomUUID(),
+        randomUUID(),
         {
           buffer: req.body,
           fileName,
-          mimeType: req.headers["x-file-type"],
+          mimeType: fileType,
         },
       );
       return res.status(201).json({ ok: true, attachment });

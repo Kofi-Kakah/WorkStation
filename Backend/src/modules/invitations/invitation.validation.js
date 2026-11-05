@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { idSchema as id } from "../../shared/validation/ids.js";
 
 export const invitationWorkspaceParamsSchema = z.object({
-  workspaceId: z.string().min(1),
+  workspaceId: id,
 });
 
 export const invitationTokenParamsSchema = z.object({

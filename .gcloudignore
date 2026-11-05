@@ -1,0 +1,26 @@
+# Keep Cloud Build uploads small and free of credentials.
+.git
+.gcloudignore
+AGENTS.md
+README.md
+docs
+
+# The API image only needs Backend/.
+Frontend
+
+# Dependencies, build output, and test artifacts are rebuilt in Cloud Build.
+**/node_modules
+**/dist
+**/dist-ssr
+**/coverage
+**/logs
+**/*.log
+
+# Never upload local environment files or key material.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/service-account*.json
+**/firebase-debug.log

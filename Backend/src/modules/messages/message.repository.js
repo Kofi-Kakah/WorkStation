@@ -40,14 +40,44 @@ export default class MessageRepository {
     this.attachmentRepository = attachmentRepository;
   }
 
-  async _hydrate(snapshot, uid) {
-    const message = messageFromSnapshot(snapshot);
-    message.attachments = await this.attachmentRepository.getForMessages(
-      snapshot.ref.path.split("/")[1],
-      uid,
-      message.attachmentIds || [],
-    );
+  async _hydrate(snapshot, uid, channelId = null) {
+    const [message] = await this._hydrateMany([snapshot], uid, channelId);
     return message;
+  }
+
+  /**
+   * Resolve attachments for a whole page with one access check instead of
+   * one check plus one lookup per message.
+   */
+  async _hydrateMany(snapshots, uid, channelId = null) {
+    const resolvedChannelId =
+      channelId || snapshots[0]?.ref.path.split("/")[1] || null;
+    const messages = snapshots.map(messageFromSnapshot);
+    const uploadIds = [
+      ...new Set(messages.flatMap((message) => message.attachmentIds || [])),
+    ];
+
+    if (!uploadIds.length) {
+      messages.forEach((message) => {
+        message.attachments = [];
+      });
+      return messages;
+    }
+
+    const attachments = await this.attachmentRepository.getForMessages(
+      resolvedChannelId,
+      uid,
+      uploadIds,
+    );
+    const attachmentById = new Map(
+      attachments.map((attachment) => [attachment.id, attachment]),
+    );
+    messages.forEach((message) => {
+      message.attachments = (message.attachmentIds || [])
+        .map((uploadId) => attachmentById.get(uploadId))
+        .filter(Boolean);
+    });
+    return messages;
   }
 
   async list(channelId, uid, { limit, before, parentMessageId = null }) {
@@ -71,9 +101,7 @@ export default class MessageRepository {
         .limit(limit);
     }
     const result = await query.get();
-    let messages = await Promise.all(
-      result.docs.map((snapshot) => this._hydrate(snapshot, uid)),
-    );
+    let messages = await this._hydrateMany(result.docs, uid, channelId);
     if (!parentMessageId) messages = messages.reverse();
     return {
       messages,
@@ -415,9 +443,7 @@ export default class MessageRepository {
       )
       .slice(0, limit);
     return {
-      messages: await Promise.all(
-        matches.map((snapshot) => this._hydrate(snapshot, uid)),
-      ),
+      messages: await this._hydrateMany(matches, uid, channelId),
       limited: result.size === scanLimit,
     };
   }

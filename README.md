@@ -21,6 +21,8 @@ WorkStation/
 │   ├── tests/          # vitest + supertest
 │   ├── package.json
 │   ├── .env.example
+│   ├── Dockerfile          # production Cloud Run image
+│   ├── cloudbuild.yaml     # build, push, deploy pipeline
 │   └── eslint.config.js
 └── Frontend/           # React 19 + Vite + Tailwind v4 + Chakra UI
     ├── src/
@@ -40,6 +42,13 @@ WorkStation/
     ├── eslint.config.js
     └── index.html
 ```
+
+Deployment and reference documentation lives in `docs/`:
+
+- [`docs/API.md`](docs/API.md) — API conventions, endpoints, SSE, error codes.
+- [`docs/DATABASE.md`](docs/DATABASE.md) — Firestore collections, indexes, limits.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Cloud Run, Hosting, rules, monitoring.
+- [`docs/HANDOVER.md`](docs/HANDOVER.md) — architecture summary, status, known issues.
 
 ## Tech stack
 
@@ -104,29 +113,35 @@ curl http://localhost:4000/api/health/ready
 
 ### Test coverage
 
-Backend Vitest tests cover workspace/project permissions, channel membership,
-message behavior and pagination/search limits, board and issue operations,
-integrations, notifications, analytics, CORS policy, and API authentication
-boundaries. On constrained development machines, run
-`npm --prefix Backend test -- --maxWorkers=1 --minWorkers=1` to avoid worker
-contention.
+The current suite passes: backend 20 test files / 106 tests, frontend 5 test
+files / 20 tests. Backend Vitest tests cover workspace/project permissions,
+channel membership, message behavior and pagination/search limits, board and
+issue operations, integrations, notifications, analytics, CORS policy, API
+authentication boundaries, and SSE stream limits. On constrained development
+machines, run `npm --prefix Backend test -- --maxWorkers=1 --minWorkers=1` to
+avoid worker contention.
 
-Frontend tests use Vitest, jsdom, and React Testing Library. Current component
-tests cover sign-in validation, Firebase token verification, authentication
-failures, and password-reset feedback. They mock Firebase and the API; they do
-not replace Firebase Emulator or browser end-to-end testing.
+Frontend tests use Vitest, jsdom, and React Testing Library. They cover routing
+and auth guards, theme persistence and system preference handling, responsive
+navigation and context-panel behavior, sign-in validation, Firebase token
+verification, authentication failures, password-reset feedback, and SSE
+connection states. They mock Firebase and the API; they do not replace Firebase
+Emulator or browser end-to-end testing.
 
 ## Environment variables
 
-**Backend** (see `.env.example`): `PORT`, `NODE_ENV`, `CORS_ORIGINS`, rate-limit and
-logging settings, and Firebase Admin credentials (emulator mode by default).
+**Backend** (see `.env.example`): `PORT`, `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`
+(set `true` behind Cloud Run's single proxy hop), `AUTH_TOKEN_CACHE_MS`, rate-limit
+and logging settings, and Firebase Admin credentials (emulator mode by default).
+`AUTH_TOKEN_CACHE_MS` caches verified ID tokens briefly (default 60 s) so Firebase
+Auth is not called on every request; revocations propagate within that window.
 
-**Frontend** (see `.env.local`): `VITE_FIREBASE_*` client config (already populated for
-project `workshop-111f1`) and `VITE_USE_FIREBASE_EMULATOR=true` to connect to the
-emulator locally. Browser push additionally requires `VITE_FIREBASE_VAPID_KEY`,
-the public Web Push certificate key from Firebase Console. It is a public client
-configuration value, not a server credential. Enable Firebase Cloud Messaging
-for the project before opting into browser push.
+**Frontend** (see `Frontend/.env.example`): `VITE_FIREBASE_*` client config and
+`VITE_USE_FIREBASE_EMULATOR=true` to connect to the emulator locally. Browser
+push additionally requires `VITE_FIREBASE_VAPID_KEY`, the public Web Push
+certificate key from Firebase Console. These values are public client
+configuration, not server credentials. Enable Firebase Cloud Messaging for the
+project before opting into browser push.
 
 Notifications are stored per user at
 `users/{userId}/notifications/{notificationId}` and device registrations at
@@ -182,6 +197,32 @@ origins are rejected.
   Status sync uses Firestore transactions.
 - **Shared services** (notification, activity, permission, attachment, user-lookup)
   avoid duplicated logic across modules.
+
+## Production deployment
+
+The deployment path is Firebase Hosting for the SPA and Cloud Run for the API,
+with Firestore, Storage, Auth, and FCM in project `workshop-111f1`.
+
+```bash
+# Build, push, and deploy the API (from the repository root)
+gcloud builds submit . --config Backend/cloudbuild.yaml --project workshop-111f1
+
+# Apply Firestore/Storage rules and indexes
+firebase deploy --only firestore:rules,firestore:indexes,storage --project workshop-111f1
+
+# Build and deploy the SPA; Hosting rewrites /api/** to Cloud Run
+firebase deploy --only hosting --project workshop-111f1
+```
+
+The backend image is defined by `Backend/Dockerfile` and runs as a non-root user
+on Node 22 Alpine. It uses Application Default Credentials from the Cloud Run
+service account; no service-account key is stored in the repository or image.
+Production logs are structured JSON with a Cloud Logging `severity` field.
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for one-time IAM setup,
+environment variables, verification steps, monitoring, rollback, and known
+deployment caveats. Nothing in this repository is deployed automatically; the
+commands require access to the Google Cloud and Firebase projects.
 
 ## Development sections
 

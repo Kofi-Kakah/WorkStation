@@ -24,4 +24,8 @@ dist-ssr
 *.sw?
 
 AGENTS.md
-.env.local
+
+# Environment files (Vite loads .env, .env.local, .env.[mode].local)
+.env
+.env.*
+!.env.example

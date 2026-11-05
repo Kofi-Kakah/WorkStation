@@ -4,23 +4,41 @@ import { Box, Spinner, Text, VStack } from "@chakra-ui/react";
 import { useAuth } from "../contexts/useAuth.jsx";
 import MainLayout from "../layouts/MainLayout.jsx";
 import DashboardPage from "../features/dashboard/DashboardPage.jsx";
-import HealthPage from "../features/dashboard/HealthPage.jsx";
 import LoginPage from "../features/auth/LoginPage.jsx";
 import RegisterPage from "../features/auth/RegisterPage.jsx";
-import WorkspaceSettingsPage from "../features/workspace/WorkspaceSettingsPage.jsx";
-import ProfilePage from "../features/profile/ProfilePage.jsx";
-import ProjectsPage from "../features/projects/ProjectsPage.jsx";
-import ProjectDetailPage from "../features/projects/ProjectDetailPage.jsx";
-import InvitationResponsePage from "../features/workspace/InvitationResponsePage.jsx";
-import ChatPage from "../features/chat/ChatPage.jsx";
-import IssuesPage from "../features/issues/IssuesPage.jsx";
-import NotificationsPage from "../features/notifications/NotificationsPage.jsx";
 
+const HealthPage = lazy(() => import("../features/dashboard/HealthPage.jsx"));
+const WorkspaceSettingsPage = lazy(
+  () => import("../features/workspace/WorkspaceSettingsPage.jsx"),
+);
+const ProfilePage = lazy(() => import("../features/profile/ProfilePage.jsx"));
+const ProjectsPage = lazy(
+  () => import("../features/projects/ProjectsPage.jsx"),
+);
+const ProjectDetailPage = lazy(
+  () => import("../features/projects/ProjectDetailPage.jsx"),
+);
+const InvitationResponsePage = lazy(
+  () => import("../features/workspace/InvitationResponsePage.jsx"),
+);
+const ChatPage = lazy(() => import("../features/chat/ChatPage.jsx"));
+const IssuesPage = lazy(() => import("../features/issues/IssuesPage.jsx"));
+const NotificationsPage = lazy(
+  () => import("../features/notifications/NotificationsPage.jsx"),
+);
 const BoardsPage = lazy(() => import("../features/boards/BoardsPage.jsx"));
 const ProductivityPage = lazy(
   () => import("../features/productivity/ProductivityPage.jsx"),
 );
 const SearchPage = lazy(() => import("../features/search/SearchPage.jsx"));
+
+function PageLoader() {
+  return (
+    <Box minH="40vh" display="grid" placeItems="center" role="status">
+      <Spinner color="accent" />
+    </Box>
+  );
+}
 
 function ProtectedRoute({ children }) {
   const { authenticated, loading } = useAuth();
@@ -53,6 +71,14 @@ function ProtectedRoute({ children }) {
   return <MainLayout>{children}</MainLayout>;
 }
 
+function ProtectedPage({ children }) {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </ProtectedRoute>
+  );
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -61,137 +87,113 @@ export default function AppRoutes() {
       <Route
         path="/invitations/:token"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <InvitationResponsePage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/projects"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <ProjectsPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/boards"
         element={
-          <ProtectedRoute>
-            <Suspense
-              fallback={
-                <Box minH="40vh" display="grid" placeItems="center" role="status">
-                  <Spinner color="accent" />
-                </Box>
-              }
-            >
-              <BoardsPage />
-            </Suspense>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <BoardsPage />
+          </ProtectedPage>
         }
       />
       <Route
         path="/issues"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <IssuesPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/issues/:issueId"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <IssuesPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/notifications"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <NotificationsPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/productivity"
         element={
-          <ProtectedRoute>
-            <Suspense
-              fallback={
-                <Box minH="40vh" display="grid" placeItems="center" role="status">
-                  <Spinner color="accent" />
-                </Box>
-              }
-            >
-              <ProductivityPage />
-            </Suspense>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <ProductivityPage />
+          </ProtectedPage>
         }
       />
       <Route
         path="/search"
         element={
-          <ProtectedRoute>
-            <Suspense
-              fallback={
-                <Box minH="40vh" display="grid" placeItems="center" role="status">
-                  <Spinner color="accent" />
-                </Box>
-              }
-            >
-              <SearchPage />
-            </Suspense>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <SearchPage />
+          </ProtectedPage>
         }
       />
       <Route
         path="/channels"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <ChatPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/dm"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <ChatPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/projects/:projectId"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <ProjectDetailPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/workspace"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <WorkspaceSettingsPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/profile"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <ProfilePage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route
         path="/health"
         element={
-          <ProtectedRoute>
+          <ProtectedPage>
             <HealthPage />
-          </ProtectedRoute>
+          </ProtectedPage>
         }
       />
       <Route

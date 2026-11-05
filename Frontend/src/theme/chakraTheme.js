@@ -19,30 +19,42 @@ const colors = {
   danger: "var(--danger)",
   warning: "var(--warning)",
   info: "var(--info)",
+  orange: {
+    50: "#FFF7ED",
+    100: "#FFEDD5",
+    200: "#FED7AA",
+    300: "#FDBA74",
+    400: "#FB923C",
+    500: "#FF6A2B",
+    600: "#EA580C",
+    700: "#C2410C",
+    800: "#9A3412",
+    900: "#7C2D12",
+  },
   gray: {
-    50: "var(--amethyst-50)",
-    100: "var(--amethyst-100)",
-    200: "var(--amethyst-200)",
-    300: "var(--amethyst-300)",
-    400: "var(--amethyst-400)",
-    500: "var(--amethyst-500)",
-    600: "var(--amethyst-600)",
-    700: "var(--amethyst-700)",
-    800: "var(--amethyst-800)",
-    900: "var(--amethyst-900)",
+    50: "#F5F1EE",
+    100: "#E6E0DA",
+    200: "#C9C0B8",
+    300: "#A39A94",
+    400: "#857B74",
+    500: "#6B625C",
+    600: "#4A423D",
+    700: "#2A2420",
+    800: "#1C1816",
+    900: "#151210",
   },
   amethyst: {
-    50: "var(--amethyst-50)",
-    100: "var(--amethyst-100)",
-    200: "var(--amethyst-200)",
-    300: "var(--amethyst-300)",
-    400: "var(--amethyst-400)",
-    500: "var(--amethyst-500)",
-    600: "var(--amethyst-600)",
-    700: "var(--amethyst-700)",
-    800: "var(--amethyst-800)",
-    900: "var(--amethyst-900)",
-    950: "var(--amethyst-950)",
+    50: "#0B0908",
+    100: "rgba(255,106,43,0.12)",
+    200: "rgba(255,106,43,0.18)",
+    300: "#FF8A3D",
+    400: "#FF8A3D",
+    500: "#FF6A2B",
+    600: "#FF6A2B",
+    700: "#E5471A",
+    800: "#C3340D",
+    900: "#1C1816",
+    950: "#0B0908",
   },
   semantic: {
     success: "var(--success)",
@@ -56,9 +68,13 @@ const theme = extendTheme({
   colors,
   fonts: {
     body: '"Inter", ui-sans-serif, system-ui, sans-serif',
-    heading:
-      '"Inter", ui-sans-serif, system-ui, sans-serif',
+    heading: '"Inter", ui-sans-serif, system-ui, sans-serif',
     mono: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+  },
+  radii: {
+    card: "16px",
+    control: "12px",
+    icon: "10px",
   },
   styles: {
     global: () => ({
@@ -78,14 +94,20 @@ const theme = extendTheme({
     Button: {
       baseStyle: {
         fontWeight: "600",
-        borderRadius: "10px",
+        borderRadius: "12px",
+        transition: "all 150ms ease",
       },
       variants: {
         solid: () => ({
-          bg: "accent",
+          bg: "var(--gradient-primary)",
           color: "white",
-          _hover: { bg: "accentHot" },
-          _active: { bg: "accentDeep" },
+          _hover: {
+            filter: "brightness(1.08)",
+            boxShadow: "var(--shadow-accent)",
+          },
+          _active: {
+            filter: "brightness(0.95)",
+          },
         }),
         ghost: () => ({
           color: "textSecondary",
@@ -94,11 +116,124 @@ const theme = extendTheme({
             color: "textPrimary",
           },
         }),
+        outline: () => ({
+          borderColor: "borderSubtle",
+          color: "textPrimary",
+          bg: "transparent",
+          _hover: {
+            bg: "surfaceRaised",
+            borderColor: "borderSubtle",
+          },
+        }),
+      },
+    },
+    Input: {
+      variants: {
+        outline: () => ({
+          field: {
+            bg: "surfaceRaised",
+            borderColor: "borderSubtle",
+            borderRadius: "12px",
+            color: "textPrimary",
+            _placeholder: { color: "textMuted" },
+            _hover: { borderColor: "borderSubtle" },
+            _focusVisible: {
+              borderColor: "accent",
+              boxShadow: "0 0 0 1px var(--accent)",
+            },
+          },
+        }),
+      },
+      defaultProps: {
+        variant: "outline",
+      },
+    },
+    Modal: {
+      baseStyle: {
+        dialog: {
+          bg: "surface",
+          borderColor: "borderSubtle",
+          borderWidth: "1px",
+          borderRadius: "16px",
+          color: "textPrimary",
+          boxShadow: "0 20px 48px rgba(0, 0, 0, 0.6)",
+        },
+        header: {
+          color: "textPrimary",
+          fontWeight: "600",
+          fontSize: "lg",
+        },
+        overlay: {
+          bg: "blackAlpha.800",
+          backdropFilter: "blur(4px)",
+        },
+      },
+    },
+    Menu: {
+      baseStyle: {
+        list: {
+          bg: "surface",
+          borderColor: "borderSubtle",
+          borderWidth: "1px",
+          borderRadius: "12px",
+          color: "textPrimary",
+          boxShadow: "0 16px 36px rgba(0, 0, 0, 0.5)",
+          p: 1,
+        },
+        item: {
+          bg: "transparent",
+          color: "textSecondary",
+          borderRadius: "8px",
+          fontSize: "sm",
+          _hover: {
+            bg: "surfaceRaised",
+            color: "textPrimary",
+          },
+          _focus: {
+            bg: "surfaceRaised",
+            color: "textPrimary",
+          },
+        },
+      },
+    },
+    Popover: {
+      baseStyle: {
+        content: {
+          bg: "surface",
+          borderColor: "borderSubtle",
+          borderWidth: "1px",
+          borderRadius: "12px",
+          color: "textPrimary",
+          boxShadow: "0 16px 36px rgba(0, 0, 0, 0.5)",
+        },
+      },
+    },
+    Tooltip: {
+      baseStyle: {
+        bg: "surfaceRaised",
+        color: "textPrimary",
+        borderColor: "borderSubtle",
+        borderWidth: "1px",
+        borderRadius: "8px",
+        fontSize: "xs",
+        px: 2,
+        py: 1,
+      },
+    },
+    Card: {
+      baseStyle: {
+        container: {
+          bg: "surface",
+          borderColor: "borderSubtle",
+          borderWidth: "1px",
+          borderRadius: "16px",
+          color: "textPrimary",
+        },
       },
     },
   },
   config: {
-    initialColorMode: "system",
+    initialColorMode: "dark",
     useSystemColorMode: false,
   },
 });

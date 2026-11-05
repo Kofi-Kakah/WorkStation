@@ -63,6 +63,38 @@ export function canManageProject(workspaceRole, projectRole) {
   return canManageWorkspace(workspaceRole) || projectRole === ROLES.PROJECT_MANAGER;
 }
 
+/**
+ * Read access to a project.
+ *
+ * - Workspace owners/admins can access every project.
+ * - Explicit project membership grants access (including restricted projects).
+ * - Any non-guest workspace member can access workspace-visible projects.
+ * - Guests only see projects they were explicitly added to.
+ */
+export function canAccessProject(
+  workspaceRole,
+  projectRole,
+  visibility = "workspace",
+) {
+  if (canManageWorkspace(workspaceRole)) return true;
+  if (projectRole) return true;
+  if (workspaceRole === ROLES.GUEST) return false;
+  return visibility !== "restricted";
+}
+
+/**
+ * Write access to project work (issues, comments, cards).
+ * Guests may contribute only when explicitly added to the project.
+ */
+export function canContributeToProject(
+  workspaceRole,
+  projectRole,
+  visibility = "workspace",
+) {
+  if (!canAccessProject(workspaceRole, projectRole, visibility)) return false;
+  return workspaceRole !== ROLES.GUEST || Boolean(projectRole);
+}
+
 export function canDeleteProject(workspaceRole) {
   return canManageWorkspace(workspaceRole);
 }
@@ -77,4 +109,6 @@ export default {
   canCreateProject,
   canManageProject,
   canDeleteProject,
+  canAccessProject,
+  canContributeToProject,
 };

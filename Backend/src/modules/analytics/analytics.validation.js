@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { idSchema as id } from "../../shared/validation/ids.js";
 
 export const workspaceAnalyticsQuerySchema = z.object({
-  workspaceId: z.string().trim().min(1).max(128),
+  workspaceId: id,
   includeIssues: z.enum(["true", "false"]).optional(),
 });

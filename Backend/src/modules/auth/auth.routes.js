@@ -20,8 +20,8 @@ const resetRequestSchema = z.object({
 });
 
 const resetConfirmSchema = z.object({
-  oobCode: z.string().min(1),
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  oobCode: z.string().min(1).max(2048),
+  newPassword: z.string().min(8, "Password must be at least 8 characters").max(128),
 });
 
 router.post("/register", async (req, res, next) => {

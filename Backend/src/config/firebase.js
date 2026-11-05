@@ -79,8 +79,11 @@ export function initializeFirebase() {
     });
   } else {
     // Fallback: Application Default Credentials (e.g. Cloud Run service account).
+    // Pass the project explicitly so initialization does not depend on metadata
+    // or GOOGLE_CLOUD_PROJECT being present.
     admin.initializeApp({
-      credential: admin.credential.applicationDefault({ projectId }),
+      credential: admin.credential.applicationDefault(),
+      projectId,
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
   }

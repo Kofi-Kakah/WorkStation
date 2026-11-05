@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { ROLES } from "../../shared/services/permissionService.js";
+import { idSchema } from "../../shared/validation/ids.js";
 
 const name = z.string().trim().min(2).max(80);
 const description = z.string().trim().max(500);
-const workspaceId = z.string().min(1);
-const userId = z.string().min(1);
+const workspaceId = idSchema;
+const userId = idSchema;
 
 export const createWorkspaceSchema = z.object({
   name,

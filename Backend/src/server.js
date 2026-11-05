@@ -10,6 +10,14 @@ async function main() {
       projectId: env.firebase.projectId || "emulator/default",
     });
   } catch (error) {
+    // In production the API is unusable without Firebase, and Cloud Run should
+    // replace the instance instead of serving persistent 5xx responses.
+    if (env.nodeEnv === "production") {
+      logger.error("Firebase initialization failed", {
+        error: error?.message,
+      });
+      throw error;
+    }
     logger.warn(
       "Firebase initialization failed (continuing in degraded mode)",
       { error: error?.message },

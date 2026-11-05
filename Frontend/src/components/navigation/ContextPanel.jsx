@@ -103,13 +103,13 @@ export function ContextPanel({
                     _hover={{ bg: "surfaceRaised" }}
                   >
                     <Box minWidth={0}>
-                      <Text fontSize="sm" truncate>
+                      <Text fontSize="sm" noOfLines={1}>
                         {item.label}
                       </Text>
                       <Text
                         fontSize="xs"
                         color="textMuted"
-                        truncate
+                        noOfLines={1}
                       >
                         {item.detail}
                       </Text>

@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const id = z.string().trim().min(1).max(128);
+import { idSchema as id } from "../../shared/validation/ids.js";
 
 export const messageConversionParamsSchema = z.object({ messageId: id });
 export const messageConversionSchema = z.object({

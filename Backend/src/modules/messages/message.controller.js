@@ -1,6 +1,20 @@
 import MessageService from "./message.service.js";
 import logger from "../../shared/utils/logger.js";
 
+const MAX_STREAMS_PER_USER = 5;
+const activeStreams = new Map();
+
+function acquireStreamSlot(uid) {
+  const current = activeStreams.get(uid) || 0;
+  if (current >= MAX_STREAMS_PER_USER) return null;
+  activeStreams.set(uid, current + 1);
+  return () => {
+    const remaining = (activeStreams.get(uid) || 1) - 1;
+    if (remaining <= 0) activeStreams.delete(uid);
+    else activeStreams.set(uid, remaining);
+  };
+}
+
 export default class MessageController {
   constructor(service = new MessageService()) {
     this.service = service;
@@ -103,11 +117,25 @@ export default class MessageController {
   async events(req, res, next) {
     let unsubscribe;
     let heartbeat;
+    let releaseSlot = null;
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      releaseSlot?.();
+    };
     try {
       await this.service.list(req.params.channelId, req.user.uid, {
         limit: 1,
         parentMessageId: null,
       });
+      releaseSlot = acquireStreamSlot(req.user.uid);
+      if (!releaseSlot) {
+        return res.status(429).json({
+          error: "Too many open message streams, close another tab first",
+          code: "TOO_MANY_STREAMS",
+        });
+      }
       res.status(200);
       res.set({
         "Content-Type": "text/event-stream",
@@ -136,8 +164,10 @@ export default class MessageController {
       res.on("close", () => {
         clearInterval(heartbeat);
         unsubscribe?.();
+        release();
       });
     } catch (error) {
+      release();
       if (res.headersSent) {
         res.end();
         return;

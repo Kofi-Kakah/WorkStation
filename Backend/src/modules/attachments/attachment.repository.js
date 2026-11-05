@@ -2,6 +2,7 @@ import { getFirestore, getStorage } from "../../config/firebase.js";
 import { Errors } from "../../shared/errors/index.js";
 import { serverTimestamp } from "../../shared/utils/index.js";
 import ChannelRepository from "../channels/channel.repository.js";
+import { isSafeId } from "../../shared/validation/ids.js";
 import logger from "../../shared/utils/logger.js";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -78,6 +79,9 @@ export default class AttachmentRepository {
   }
 
   async upload(channelId, uid, uploadId, { buffer, fileName, mimeType }) {
+    if (!isSafeId(uploadId)) {
+      throw Errors.validation("Invalid upload identifier");
+    }
     const { channelRef } = await this.channelRepository.getAccess(
       channelId,
       uid,
