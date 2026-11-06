@@ -167,7 +167,7 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
     expect(handleChange).toHaveBeenCalledWith("daily");
   });
 
-  it("renders Dropdown with items and handles selection", () => {
+  it("renders Dropdown with items and handles selection", async () => {
     const handleSelect = vi.fn();
     renderWithChakra(
       <Dropdown
@@ -181,9 +181,10 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
 
     const dropdownBtn = screen.getByRole("button", { name: "All regions" });
     expect(dropdownBtn).toBeInTheDocument();
+    fireEvent.pointerDown(dropdownBtn, { pointerType: "mouse", button: 0 });
     fireEvent.click(dropdownBtn);
 
-    const item = screen.getByRole("menuitem", { name: "North America" });
+    const item = await screen.findByRole("menuitem", { name: "North America" });
     expect(item).toBeInTheDocument();
     fireEvent.click(item);
     expect(handleSelect).toHaveBeenCalledTimes(1);

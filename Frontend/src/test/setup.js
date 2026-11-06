@@ -30,6 +30,14 @@ window.matchMedia = vi.fn().mockImplementation((query) => ({
   dispatchEvent: vi.fn(),
 }));
 
+// jsdom does not implement smooth scrolling APIs used by menu/palette widgets.
+if (!Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = () => {};
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 if (!globalThis.ResizeObserver) {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}

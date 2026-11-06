@@ -5,6 +5,28 @@ Trello-style Kanban boards, and Jira-style issue tracking in one cohesive
 workspace. Built with React + Vite (frontend) and Express + Firebase Admin
 (backend), using Cloud Firestore as the single source of truth.
 
+## Frontend experience
+
+The shipped interface is a demo-ready WorkStation workspace built around three
+surfaces that share one record:
+
+- **Channels** (Slack-style): channel + DM threads, reactions, message capture to issues.
+- **Boards** (Trello-style): drag-and-drop Kanban where each card is a real issue.
+- **Issues** (Jira-style): sprint header, filters, workflow transitions, issue detail.
+
+Plus a **Overview** command deck and a **Pulse** activity/integration view.
+
+Visual language: near-black surfaces, hairline geometry, ember-red glow, an
+isometric "three systems" hero scene, Chakra Petch display type and JetBrains
+Mono UI type. State is seeded and persisted in `localStorage`, so the workspace
+runs without Firebase credentials or the API; the earlier backend-connected
+screens are preserved in `Frontend/src/features` and documented in
+[`Frontend/README.md`](Frontend/README.md).
+
+```bash
+cd Frontend && npm install && npm run dev   # http://localhost:5173
+```
+
 ## Repository layout
 
 ```
