@@ -6,8 +6,11 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: "0.0.0.0",
     port: 5173,
     strictPort: true,
+    // The preview runs behind a proxied host, so accept any incoming host.
+    allowedHosts: true,
     proxy: {
       // Forward /api/* to the Express backend during local development.
       '/api': {
