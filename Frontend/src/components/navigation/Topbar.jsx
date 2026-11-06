@@ -5,7 +5,7 @@ import {
   IconButton,
   Text,
   Tooltip,
-  useColorMode,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import {
   Home,
@@ -13,10 +13,8 @@ import {
   ChevronRight,
   Command,
   Menu,
-  MoonStar,
   PanelRight,
   Search,
-  Sun,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +34,8 @@ const PAGE_TITLES = [
   ["/productivity", "Productivity"],
   ["/search", "Search"],
   ["/notifications", "Notifications"],
+  ["/workspace", "Workspace settings"],
+  ["/profile", "Profile"],
   ["/settings", "Settings"],
 ];
 
@@ -47,7 +47,6 @@ const PAGE_TITLES = [
 export function Topbar({ className = "", onMenu, onToggleContext }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { colorMode, toggleColorMode } = useColorMode();
   const { profile, user } = useAuth();
   const unreadNotificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -59,12 +58,20 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
     },
   });
   const unreadCount = unreadNotificationsQuery.data || 0;
+  const showBreadcrumbParent =
+    useBreakpointValue({ base: false, sm: true }) ?? false;
   const displayName = profile?.displayName || "Account";
+  const matchedTitle = PAGE_TITLES.find(([path]) =>
+    location.pathname.startsWith(path),
+  )?.[1];
+  const lastSegment = location.pathname.split("/").filter(Boolean).pop();
+  const fallbackTitle = lastSegment
+    ? lastSegment
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+    : "Overview";
   const pageTitle =
-    (location.pathname === "/"
-      ? "Overview"
-      : PAGE_TITLES.find(([path]) => location.pathname.startsWith(path))?.[1]) ||
-    "Workspace";
+    location.pathname === "/" ? "Overview" : matchedTitle || fallbackTitle;
 
   return (
     <Box
@@ -78,42 +85,60 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
       px={{ base: 3, md: 5, xl: 6 }}
       flexShrink={0}
     >
-      <HStack minW="0" spacing={2.5}>
+      <HStack minW="0" spacing={1.5}>
         <IconButton
           aria-label="Open workspace navigation"
-          icon={<Menu size={18} />}
+          icon={<Menu size={18} strokeWidth={1.5} />}
           variant="ghost"
+          size="sm"
           display={{ base: "inline-flex", md: "none" }}
           onClick={onMenu}
         />
-        <Box display="flex" alignItems="center" gap={2} minW="0">
-          <Home
-            size={15}
-            className="shrink-0 text-muted"
-            aria-hidden="true"
-          />
-          <Text
-            display={{ base: "none", sm: "block" }}
-            fontSize="xs"
-            color="textMuted"
-            noOfLines={1}
-          >
-            Workspace
-          </Text>
-          <ChevronRight
-            size={13}
-            className="hidden shrink-0 text-gray-400 sm:block"
-            aria-hidden="true"
-          />
-          <Text
-            fontSize="sm"
-            fontWeight="600"
-            color="textPrimary"
-            noOfLines={1}
-          >
-            {pageTitle}
-          </Text>
-        </Box>
+        <IconButton
+          aria-label="Go to overview"
+          icon={<Home size={15} strokeWidth={1.5} />}
+          variant="ghost"
+          size="xs"
+          minW="28px"
+          h="28px"
+          flexShrink={0}
+          color="textMuted"
+          _hover={{ color: "textPrimary", bg: "surfaceRaised" }}
+          onClick={() => navigate("/dashboard")}
+        />
+        {showBreadcrumbParent && (
+          <HStack spacing={1.5} minW="0">
+            <Box
+              as="button"
+              type="button"
+              flexShrink={0}
+              px={1}
+              py={0.5}
+              borderRadius="6px"
+              fontSize="xs"
+              color="textMuted"
+              transition="color 150ms ease"
+              _hover={{ color: "textPrimary" }}
+              onClick={() => navigate("/dashboard")}
+            >
+              Workspace
+            </Box>
+            <ChevronRight
+              size={13}
+              color="var(--text-muted)"
+              aria-hidden="true"
+              style={{ flexShrink: 0 }}
+            />
+          </HStack>
+        )}
+        <Text
+          fontSize="sm"
+          fontWeight="600"
+          color="textPrimary"
+          noOfLines={1}
+        >
+          {pageTitle}
+        </Text>
       </HStack>
 
       <HStack spacing={{ base: 1, md: 2 }} flexShrink={0}>
@@ -137,7 +162,7 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           }}
           onClick={() => navigate("/search")}
         >
-          <Search size={14} />
+          <Search size={14} strokeWidth={1.5} />
           <Text display={{ base: "none", sm: "block" }} flex={1} textAlign="left">
             Search workspace...
           </Text>
@@ -164,51 +189,34 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           <Box position="relative">
             <IconButton
               aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
-              icon={<Bell size={16} />}
+              icon={<Bell size={16} strokeWidth={1.5} />}
               variant="ghost"
               size="sm"
               onClick={() => navigate("/notifications")}
             />
             {unreadCount > 0 && (
               <Box
+                data-testid="notification-dot"
                 aria-hidden="true"
                 pointerEvents="none"
                 position="absolute"
-                top="1px"
-                right="1px"
-                minW="15px"
-                h="15px"
-                px="3px"
+                top="6px"
+                right="6px"
+                w="8px"
+                h="8px"
                 borderRadius="full"
                 bg="danger"
-                color="white"
-                border="1px solid"
+                border="2px solid"
                 borderColor="base"
-                fontSize="9px"
-                lineHeight="13px"
-                textAlign="center"
-              >
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Box>
+              />
             )}
           </Box>
-        </Tooltip>
-
-        <Tooltip label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-          <IconButton
-            aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            icon={colorMode === "dark" ? <Sun size={16} /> : <MoonStar size={16} />}
-            variant="ghost"
-            size="sm"
-            display="inline-flex"
-            onClick={toggleColorMode}
-          />
         </Tooltip>
 
         <Tooltip label="Open workspace context">
           <IconButton
             aria-label="Toggle workspace context"
-            icon={<PanelRight size={16} />}
+            icon={<PanelRight size={16} strokeWidth={1.5} />}
             variant="ghost"
             size="sm"
             display="inline-flex"
@@ -226,8 +234,10 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
           p="2px"
           borderRadius="full"
           border="1px solid"
-          borderColor="accentBorder"
+          borderColor="borderSubtle"
           cursor="pointer"
+          transition="border-color 150ms ease"
+          _hover={{ borderColor: "accentBorder" }}
           onClick={() => navigate("/profile")}
         >
           <Avatar

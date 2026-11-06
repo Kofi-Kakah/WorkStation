@@ -1,5 +1,6 @@
-import { Box, Text, Icon, Button } from "@chakra-ui/react";
+import { Box, Text, Icon } from "@chakra-ui/react";
 import { Inbox } from "lucide-react";
+import { Button } from "../ui/Button.jsx";
 
 /**
  * Generic empty state.
@@ -24,37 +25,19 @@ export function EmptyState({
       textAlign="center"
       {...props}
     >
-      <Box
-        p={4}
-        borderRadius="50%"
-        bg="amethyst.100"
-        _dark={{ bg: "amethyst.900" }}
-        mb={4}
-      >
-        <Icon as={IconComp} boxSize={8} color="amethyst.500" />
+      <Box p={4} borderRadius="50%" bg="accentSoft" mb={4}>
+        <Icon as={IconComp} boxSize={8} color="accent" />
       </Box>
-      <Text fontSize="lg" fontWeight="700" mb={1}>
+      <Text fontSize="lg" fontWeight="700" mb={1} color="textPrimary">
         {title}
       </Text>
       {description && (
-        <Text
-          color="gray.500"
-          _dark={{ color: "gray.400" }}
-          fontSize="sm"
-          maxW="md"
-          mb={4}
-        >
+        <Text color="textSecondary" fontSize="sm" maxW="md" mb={4}>
           {description}
         </Text>
       )}
       {action && (
-        <Button
-          onClick={action.onClick}
-          bg="amethyst.600"
-          color="white"
-          _hover={{ bg: "amethyst.700" }}
-          borderRadius="10px"
-        >
+        <Button variant="primary" borderRadius="control" onClick={action.onClick}>
           {action.label}
         </Button>
       )}

@@ -19,15 +19,16 @@ import ContextPanel from "../components/navigation/ContextPanel.jsx";
  */
 export function MainLayout({ children, className = "", ...props }) {
   const navigate = useNavigate();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // null follows the viewport default; a boolean is an explicit user choice.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(null);
   const [contextOpen, setContextOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contextDrawerOpen, setContextDrawerOpen] = useState(false);
 
   const isMobile = useBreakpointValue({ base: true, md: false }) ?? true;
-  const isCompact = useBreakpointValue({ base: true, md: false }) ?? true;
+  const isCompact = useBreakpointValue({ base: true, lg: false }) ?? true;
   const showContextPanel = useBreakpointValue({ base: false, xl: true }) ?? false;
-  const collapsed = sidebarCollapsed || isCompact;
+  const collapsed = sidebarCollapsed ?? isCompact;
 
   useEffect(() => {
     const handleSearchShortcut = (event) => {
@@ -62,7 +63,7 @@ export function MainLayout({ children, className = "", ...props }) {
         <Box
           as="aside"
           className="app-sidebar border-r"
-          w={collapsed ? "68px" : "240px"}
+          w={collapsed ? "72px" : "240px"}
           h="100%"
           flexShrink={0}
           overflow="hidden"
@@ -70,9 +71,7 @@ export function MainLayout({ children, className = "", ...props }) {
         >
           <Sidebar
             collapsed={collapsed}
-            onCollapse={
-              isCompact ? undefined : () => setSidebarCollapsed((value) => !value)
-            }
+            onCollapse={() => setSidebarCollapsed(!collapsed)}
           />
         </Box>
       )}
@@ -93,12 +92,13 @@ export function MainLayout({ children, className = "", ...props }) {
         <Box display="flex" flex={1} minW="0" minH="0" overflow="hidden">
           <Box
             as="main"
+            id="main-content"
             className="app-content app-scrollbar"
             flex={1}
             minW="0"
             overflowY="auto"
-            px={{ base: 4, md: 6, xl: 7 }}
-            py={{ base: 5, md: 7 }}
+            px={{ base: 4, md: 5, xl: 6 }}
+            py={{ base: 5, md: 5, xl: 6 }}
           >
             {children}
           </Box>
@@ -107,7 +107,7 @@ export function MainLayout({ children, className = "", ...props }) {
             <Box
               as="aside"
               className="app-sidebar border-l"
-              w="286px"
+              w="300px"
               flexShrink={0}
               overflowY="auto"
             >

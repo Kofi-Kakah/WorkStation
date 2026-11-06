@@ -31,6 +31,15 @@ const ProductivityPage = lazy(
   () => import("../features/productivity/ProductivityPage.jsx"),
 );
 const SearchPage = lazy(() => import("../features/search/SearchPage.jsx"));
+const PrimitivesPreviewPage = import.meta.env.DEV
+  ? lazy(() => import("../features/dev/PrimitivesPreviewPage.jsx"))
+  : null;
+const ShellPreviewPage = import.meta.env.DEV
+  ? lazy(() => import("../features/dev/ShellPreviewPage.jsx"))
+  : null;
+const DashboardPreviewPage = import.meta.env.DEV
+  ? lazy(() => import("../features/dev/DashboardPreviewPage.jsx"))
+  : null;
 
 function PageLoader() {
   return (
@@ -53,12 +62,8 @@ function ProtectedRoute({ children }) {
         role="status"
       >
         <VStack spacing={3}>
-          <Spinner color="amethyst.500" thickness="2px" />
-          <Text
-            fontSize="sm"
-            color="gray.500"
-            _dark={{ color: "whiteAlpha.600" }}
-          >
+          <Spinner color="accent" thickness="2px" />
+          <Text fontSize="sm" color="textSecondary">
             Loading your workspace
           </Text>
         </VStack>
@@ -82,6 +87,36 @@ function ProtectedPage({ children }) {
 export default function AppRoutes() {
   return (
     <Routes>
+      {import.meta.env.DEV && PrimitivesPreviewPage && (
+        <Route
+          path="/dev/primitives"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <PrimitivesPreviewPage />
+            </Suspense>
+          }
+        />
+      )}
+      {import.meta.env.DEV && ShellPreviewPage && (
+        <Route
+          path="/dashboard/preview"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ShellPreviewPage />
+            </Suspense>
+          }
+        />
+      )}
+      {import.meta.env.DEV && DashboardPreviewPage && (
+        <Route
+          path="/dev/dashboard"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <DashboardPreviewPage />
+            </Suspense>
+          }
+        />
+      )}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route

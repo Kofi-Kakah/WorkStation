@@ -48,6 +48,14 @@ if (!globalThis.ResizeObserver) {
   };
 }
 
+if (!Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = vi.fn();
+}
+
+if (!window.scrollTo) {
+  window.scrollTo = vi.fn();
+}
+
 afterEach(() => {
   cleanup();
 });

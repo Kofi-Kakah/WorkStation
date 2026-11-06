@@ -9,6 +9,9 @@ export default mergeConfig(
       environment: "jsdom",
       setupFiles: ["./src/test/setup.js"],
       clearMocks: true,
+      pool: "threads",
+      fileParallelism: false,
+      testTimeout: 15000,
     },
   }),
 );

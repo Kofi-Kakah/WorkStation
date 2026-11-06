@@ -14,6 +14,7 @@ const colors = {
   "text-primary": "var(--text-primary)",
   "text-secondary": "var(--text-secondary)",
   "text-muted": "var(--text-muted)",
+  "on-accent": "var(--text-on-accent)",
   accent: "var(--accent)",
   "accent-hot": "var(--accent-hot)",
   "accent-deep": "var(--accent-deep)",
@@ -23,6 +24,7 @@ const colors = {
   "success-soft": "var(--success-soft)",
   danger: "var(--danger)",
   warning: "var(--warning)",
+  "warning-soft": "var(--warning-soft)",
   info: "var(--info)",
 };
 

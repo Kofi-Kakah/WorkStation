@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, Text, HStack, Icon, IconButton, Divider } from "@chakra-ui/react";
-import { X, ChevronUp, ChevronDown, Users, Activity } from "lucide-react";
+import { X, ChevronUp, ChevronDown, PanelRight } from "lucide-react";
 
 /**
  * Reusable contextual right panel.
@@ -16,34 +16,13 @@ export function ContextPanel({
 }) {
   const [expanded, setExpanded] = useState(true);
 
-  const defaultSections = [
-    {
-      label: "People",
-      icon: Users,
-      items: [
-        { label: "Alice Chen", detail: "Project manager", status: "online" },
-        { label: "Marcus Lee", detail: "Developer", status: "online" },
-        { label: "Priya Patel", detail: "Designer", status: "away" },
-      ],
-    },
-    {
-      label: "Activity",
-      icon: Activity,
-      items: [
-        { label: "Issue updated", detail: "2 minutes ago" },
-        { label: "Comment added", detail: "1 hour ago" },
-        { label: "Card moved", detail: "3 hours ago" },
-      ],
-    },
-  ];
-
-  const activeSections = sections || defaultSections;
+  const activeSections = sections || [];
 
   return (
     <Box className="flex flex-col h-full" {...props}>
-      <HStack justify="space-between" align="center" p={3}>
+      <HStack justify="space-between" align="center" px={3.5} py={3}>
         <HStack gap={2}>
-          <Text fontSize="sm" fontWeight="700">
+          <Text fontSize="sm" fontWeight="600">
             {title}
           </Text>
           {subtitle && (
@@ -74,10 +53,11 @@ export function ContextPanel({
         </HStack>
       </HStack>
 
-      <Divider />
+      <Divider borderColor="borderSubtle" />
 
       <Box flex={1} overflowY="auto" py={2}>
         {expanded ? (
+          activeSections.length ? (
           <Box display="flex" flexDirection="column" gap={3}>
             {activeSections.map((section) => (
               <Box key={section.label} px={3}>
@@ -134,6 +114,17 @@ export function ContextPanel({
               </Box>
             ))}
           </Box>
+          ) : (
+            <Box px={3} py={10} textAlign="center">
+              <Icon as={PanelRight} boxSize={6} color="textMuted" mb={3} />
+              <Text fontSize="sm" fontWeight="600" color="textSecondary">
+                Nothing selected yet
+              </Text>
+              <Text fontSize="xs" color="textMuted" mt={1}>
+                Select an issue, card, or conversation to see its details here.
+              </Text>
+            </Box>
+          )
         ) : (
           <Box p={3} textAlign="center">
             <Text fontSize="xs" color="textMuted">

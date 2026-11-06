@@ -20,11 +20,12 @@ export function Avatar({ name, src, size = "md", status, className = "" }) {
         name={name}
         src={src}
         className="ui-avatar"
-        bg="accent"
-        color="white"
+        bg="var(--gradient-primary)"
+        color="textOnAccent"
         fontWeight="600"
         border="1px solid"
-        borderColor="borderSubtle"
+        borderColor="var(--border-subtle)"
+        sx={{ borderColor: "var(--border-subtle)" }}
       />
       {status && (
         <Box

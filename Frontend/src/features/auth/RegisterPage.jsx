@@ -4,8 +4,8 @@ import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { auth as firebaseAuth } from "../../lib/firebase.js";
 import { api } from "../../services/apiClient.js";
-import PrimaryButton from "../../components/ui/PrimaryButton.jsx";
-import GlassCard from "../../components/ui/GlassCard.jsx";
+import { Button } from "../../components/ui/Button.jsx";
+import { AuthLayout } from "../../layouts/AuthLayout.jsx";
 
 /**
  * Registration page.
@@ -81,12 +81,8 @@ export function RegisterPage() {
   };
 
   return (
-    <div
-      role="main"
-      className="auth-page flex min-h-screen min-h-[100svh] items-center justify-center overflow-x-hidden px-4 py-8 text-primary sm:px-6"
-    >
-      <GlassCard className="w-full max-w-md p-6 sm:p-8">
-        <header className="mb-7 text-center">
+    <AuthLayout>
+      <header className="mb-7 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-primary">
             Create your account
           </h1>
@@ -242,7 +238,7 @@ export function RegisterPage() {
             </p>
           )}
 
-          <PrimaryButton
+          <Button
             variant="primary"
             type="submit"
             isLoading={loading}
@@ -251,7 +247,7 @@ export function RegisterPage() {
             className="mt-1 h-12 w-full rounded-control"
           >
             Create account
-          </PrimaryButton>
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-secondary">
@@ -263,8 +259,7 @@ export function RegisterPage() {
             Sign in
           </Link>
         </p>
-      </GlassCard>
-    </div>
+    </AuthLayout>
   );
 }
 

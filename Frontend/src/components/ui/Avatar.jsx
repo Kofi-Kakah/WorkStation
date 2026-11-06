@@ -19,14 +19,15 @@ export function Avatar({
         src={src}
         size={size}
         className={`ui-avatar ${className}`.trim()}
-        bg="transparent"
-        color="white"
+        bg="var(--gradient-primary)"
+        color="textOnAccent"
         border="1px solid"
-        borderColor="borderSubtle"
+        borderColor="var(--border-subtle)"
         sx={{
+          borderColor: "var(--border-subtle)",
           "& .chakra-avatar__initials": {
-            background: "var(--gradient-primary)",
-            color: "#ffffff",
+            background: "transparent",
+            color: "var(--text-on-accent)",
             fontWeight: "600",
             fontSize: "xs",
           },

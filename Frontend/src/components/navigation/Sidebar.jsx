@@ -9,60 +9,45 @@ import {
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth.jsx";
+import { BrandMark } from "../shared/BrandMark.jsx";
 import {
   Bell,
+  Bug,
   Building2,
+  CalendarDays,
   ChevronDown,
-  ChevronsLeft,
-  ChevronsRight,
   FolderKanban,
   Hash,
   Inbox,
   Kanban,
   LayoutDashboard,
   MessageSquare,
-  Plus,
-  Search,
+  PanelLeftClose,
   Settings,
-  Bug,
-  CalendarDays,
   UserRound,
 } from "lucide-react";
 
 const NAV_GROUPS = [
   {
-    label: "Workspace",
+    label: "Main",
     items: [
       { label: "Overview", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Inbox", icon: Inbox, to: "/inbox" },
-    ],
-  },
-  {
-    label: "Channels",
-    items: [
       { label: "Channels", icon: Hash, to: "/channels" },
       { label: "Direct messages", icon: MessageSquare, to: "/dm" },
     ],
   },
   {
-    label: "Projects",
+    label: "Insights",
     items: [
       { label: "Projects", icon: FolderKanban, to: "/projects" },
-    ],
-  },
-  {
-    label: "Boards",
-    items: [{ label: "Boards", icon: Kanban, to: "/boards" }],
-  },
-  {
-    label: "Issues",
-    items: [
+      { label: "Boards", icon: Kanban, to: "/boards" },
       { label: "Issues", icon: Bug, to: "/issues" },
       { label: "Productivity", icon: CalendarDays, to: "/productivity" },
     ],
   },
   {
-    label: "Account",
+    label: "Tools",
     items: [
       { label: "Notifications", icon: Bell, to: "/notifications" },
       { label: "Workspace settings", icon: Settings, to: "/workspace" },
@@ -96,6 +81,8 @@ export function Sidebar({
     onNavigate?.();
   };
 
+  const logoMark = <BrandMark size={32} iconSize={18} />;
+
   return (
     <Box
       className="app-sidebar flex h-full flex-col"
@@ -106,64 +93,77 @@ export function Sidebar({
       <Box
         display="flex"
         alignItems="center"
-        justifyContent="space-between"
-        px={collapsed ? 2 : 4}
+        justifyContent={collapsed ? "center" : "space-between"}
+        px={collapsed ? 0 : 4}
         pb={5}
-        minH="54px"
+        minH="56px"
       >
-        <Box display="flex" alignItems="center" gap={3} minW="0">
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            w="32px"
-            h="32px"
-            flexShrink={0}
-            borderRadius="10px"
-            bg="linear-gradient(135deg, #d8b7ff 0%, #bd79ff 38%, #9660ce 100%)"
-            color="white"
-            fontSize="sm"
-            fontWeight="800"
-            boxShadow="0 10px 20px rgba(150, 96, 206, 0.35)"
-          >
-            U
-          </Box>
-          {!collapsed && (
-            <Box minW="0">
-              <Text fontSize="sm" fontWeight="700" lineHeight="1.25">
-                WorkStation
-              </Text>
-              <Select
-                aria-label="Select workspace"
-                value={activeWorkspace?.id || ""}
-                onChange={(event) => selectWorkspace(event.target.value)}
-                size="xs"
-                variant="unstyled"
-                mt={1}
-                maxW="150px"
-                color="textMuted"
-                fontSize="xs"
-                icon={<Building2 size={12} />}
-                _focusVisible={{ boxShadow: "0 0 0 2px var(--accent)" }}
-              >
-                {!workspaces.length && (
-                  <option value="" disabled>
-                    No workspace yet
-                  </option>
-                )}
-                {workspaces.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))}
-              </Select>
+        {collapsed && onCollapse ? (
+          <Tooltip label="Expand sidebar" placement="right">
+            <Box
+              as="button"
+              type="button"
+              aria-label="Expand sidebar"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              p={0}
+              border="none"
+              bg="transparent"
+              cursor="pointer"
+              borderRadius="icon"
+              transition="filter 150ms ease"
+              _hover={{ filter: "brightness(1.08)" }}
+              onClick={onCollapse}
+            >
+              {logoMark}
             </Box>
-          )}
-        </Box>
-        {onCollapse && (
+          </Tooltip>
+        ) : (
+          <Box display="flex" alignItems="center" gap={3} minW="0">
+            {logoMark}
+            {!collapsed && (
+              <Box minW="0">
+                <Text
+                  fontSize="sm"
+                  fontWeight="600"
+                  lineHeight="1.25"
+                  letterSpacing="-0.01em"
+                >
+                  WorkStation
+                </Text>
+                <Select
+                  aria-label="Select workspace"
+                  value={activeWorkspace?.id || ""}
+                  onChange={(event) => selectWorkspace(event.target.value)}
+                  size="xs"
+                  variant="unstyled"
+                  mt={1}
+                  maxW="150px"
+                  color="textMuted"
+                  fontSize="xs"
+                  icon={<Building2 size={12} />}
+                  _focusVisible={{ boxShadow: "0 0 0 2px var(--accent)" }}
+                >
+                  {!workspaces.length && (
+                    <option value="" disabled>
+                      No workspace yet
+                    </option>
+                  )}
+                  {workspaces.map((workspace) => (
+                    <option key={workspace.id} value={workspace.id}>
+                      {workspace.name}
+                    </option>
+                  ))}
+                </Select>
+              </Box>
+            )}
+          </Box>
+        )}
+        {!collapsed && onCollapse && (
           <IconButton
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            icon={collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+            aria-label="Collapse sidebar"
+            icon={<PanelLeftClose size={16} strokeWidth={1.5} />}
             variant="ghost"
             size="xs"
             minW="28px"
@@ -174,57 +174,6 @@ export function Sidebar({
           />
         )}
       </Box>
-
-      {!collapsed && (
-        <Box px={3} pb={3}>
-          <Button
-            type="button"
-            w="full"
-            h="36px"
-            justifyContent="flex-start"
-            gap={2}
-            variant="outline"
-            borderColor="borderSubtle"
-            color="textSecondary"
-            bg="surface"
-            fontSize="xs"
-            fontWeight="500"
-            _hover={{
-              borderColor: "accentBorder",
-              color: "textPrimary",
-              bg: "surfaceRaised",
-            }}
-            onClick={() => navigateTo("/search")}
-          >
-            <Search size={14} />
-            <Text flex={1} textAlign="left">
-              Quick search
-            </Text>
-            <Text fontSize="10px" color="textMuted">
-              Ctrl K
-            </Text>
-          </Button>
-        </Box>
-      )}
-
-      {!collapsed && (
-        <Box px={3} pb={2}>
-          <Button
-            w="full"
-            h="36px"
-            justifyContent="flex-start"
-            gap={2}
-            variant="ghost"
-            color="accent"
-            fontSize="sm"
-            fontWeight="600"
-            _hover={{ bg: "accentSoft", color: "accentHot" }}
-          >
-            <Plus size={15} />
-            Create new
-          </Button>
-        </Box>
-      )}
 
       <Box
         as="nav"
@@ -258,15 +207,16 @@ export function Sidebar({
               }
               >
               <Text
-                fontSize="10px"
-                fontWeight="700"
-                letterSpacing="0.12em"
+                fontSize="11px"
+                fontWeight="600"
+                letterSpacing="0.14em"
                 textTransform="uppercase"
               >
                 {group.label}
               </Text>
               <ChevronDown
                 size={13}
+                strokeWidth={1.5}
                 className={`transition-transform duration-150 ${
                   expandedGroups[group.label] === false ? "-rotate-90" : ""
                 }`}
@@ -287,7 +237,7 @@ export function Sidebar({
                   >
                     <Button
                       aria-current={active ? "page" : undefined}
-                      data-active={active}
+                      data-nav-active={active ? "true" : undefined}
                       className="ui-nav-item"
                       variant="ghost"
                       size="sm"
@@ -297,18 +247,24 @@ export function Sidebar({
                       justifyContent={collapsed ? "center" : "flex-start"}
                       gap={2.5}
                       borderRadius="control"
-                      color={active ? "primary" : "secondary"}
+                      color={active ? "textPrimary" : "textSecondary"}
                       bg={active ? "accentSoft" : "transparent"}
-                      border={active ? "1px solid" : "1px solid transparent"}
+                      border="1px solid"
                       borderColor={active ? "accentBorder" : "transparent"}
                       position="relative"
+                      transition="background 150ms ease, border-color 150ms ease, color 150ms ease"
                       _hover={{
                         bg: active ? "accentSoft" : "surfaceRaised",
-                        color: "primary",
+                        color: "textPrimary",
                       }}
                       onClick={() => navigateTo(item.to)}
                     >
-                      <ItemIcon size={16} aria-hidden="true" />
+                      <ItemIcon
+                        size={17}
+                        strokeWidth={1.5}
+                        color={active ? "var(--accent)" : "var(--text-muted)"}
+                        aria-hidden="true"
+                      />
                       {!collapsed && (
                         <Text
                           flex={1}

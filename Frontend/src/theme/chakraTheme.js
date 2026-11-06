@@ -9,6 +9,7 @@ const colors = {
   textPrimary: "var(--text-primary)",
   textSecondary: "var(--text-secondary)",
   textMuted: "var(--text-muted)",
+  textOnAccent: "var(--text-on-accent)",
   accent: "var(--accent)",
   accentHot: "var(--accent-hot)",
   accentDeep: "var(--accent-deep)",
@@ -18,6 +19,7 @@ const colors = {
   successSoft: "var(--success-soft)",
   danger: "var(--danger)",
   warning: "var(--warning)",
+  warningSoft: "var(--warning-soft)",
   info: "var(--info)",
   orange: {
     50: "#FFF7ED",
@@ -42,19 +44,6 @@ const colors = {
     700: "#2A2420",
     800: "#1C1816",
     900: "#151210",
-  },
-  amethyst: {
-    50: "#0B0908",
-    100: "rgba(255,106,43,0.12)",
-    200: "rgba(255,106,43,0.18)",
-    300: "#FF8A3D",
-    400: "#FF8A3D",
-    500: "#FF6A2B",
-    600: "#FF6A2B",
-    700: "#E5471A",
-    800: "#C3340D",
-    900: "#1C1816",
-    950: "#0B0908",
   },
   semantic: {
     success: "var(--success)",
@@ -100,7 +89,7 @@ const theme = extendTheme({
       variants: {
         solid: () => ({
           bg: "var(--gradient-primary)",
-          color: "white",
+          color: "textOnAccent",
           _hover: {
             filter: "brightness(1.08)",
             boxShadow: "var(--shadow-accent)",

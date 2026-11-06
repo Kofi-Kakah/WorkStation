@@ -69,6 +69,12 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
     expect(screen.getByText("New")).toHaveClass("ui-badge--accent");
   });
 
+  it("renders the warning badge variant", () => {
+    renderWithChakra(<Badge variant="warning">Medium priority</Badge>);
+
+    expect(screen.getByText("Medium priority")).toHaveClass("ui-badge--warning");
+  });
+
   it("renders Card with default and featured variants", () => {
     renderWithChakra(
       <>
@@ -102,6 +108,29 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
     expect(screen.getByTitle("Needs attention")).toBeInTheDocument();
   });
 
+  it("keeps the trend arrow by sign while inverting the semantic color", () => {
+    renderWithChakra(
+      <StatCard
+        label="Average cycle time"
+        value="3.2d"
+        invertTrend
+        trend={-8}
+      />,
+    );
+
+    expect(screen.getByText("8%").closest(".ui-badge")).toHaveClass(
+      "ui-badge--success",
+    );
+  });
+
+  it("omits the options control when a StatCard has no actions", () => {
+    renderWithChakra(<StatCard label="Open issues" value={12} />);
+
+    expect(
+      screen.queryByRole("button", { name: /options for open issues/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders featured StatCard with interactive toggle switch", () => {
     const handleToggle = vi.fn();
     renderWithChakra(
@@ -122,6 +151,7 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
     const switchBtn = screen.getByRole("switch", { name: "Toggle forecast mode" });
     expect(switchBtn).toBeInTheDocument();
     expect(switchBtn).toHaveAttribute("aria-checked", "true");
+    expect(switchBtn).toHaveClass("ui-toggle--on-accent");
 
     fireEvent.click(switchBtn);
     expect(handleToggle).toHaveBeenCalledWith(false);
@@ -184,7 +214,11 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
     fireEvent.pointerDown(dropdownBtn, { pointerType: "mouse", button: 0 });
     fireEvent.click(dropdownBtn);
 
+<<<<<<< Updated upstream
     const item = await screen.findByRole("menuitem", { name: "North America" });
+=======
+    const item = screen.getByText("North America");
+>>>>>>> Stashed changes
     expect(item).toBeInTheDocument();
     fireEvent.click(item);
     expect(handleSelect).toHaveBeenCalledTimes(1);

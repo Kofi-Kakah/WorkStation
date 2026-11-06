@@ -24,7 +24,9 @@ import { Toggle } from "./Toggle.jsx";
  *   value: number|string,
  *   icon?: import('lucide-react').LucideIcon,
  *   trend?: number,
+ *   invertTrend?: boolean,
  *   comparison?: string,
+ *   caption?: string,
  *   attention?: boolean,
  *   featured?: boolean,
  *   loading?: boolean,
@@ -44,7 +46,9 @@ export function StatCard({
   value,
   icon: IconComp,
   trend,
+  invertTrend = false,
   comparison = "vs last month",
+  caption,
   attention = false,
   featured = false,
   loading = false,
@@ -87,6 +91,9 @@ export function StatCard({
   }
 
   const hasMenu = Boolean(onViewDetails || onExportCsv || onHide);
+  const showMenu = hasMenu && !onToggle;
+  const hasMeta = !empty && (trend !== undefined || Boolean(caption));
+  const trendIsPositive = invertTrend ? trend < 0 : trend >= 0;
 
   return (
     <Card
@@ -106,14 +113,14 @@ export function StatCard({
               flexShrink={0}
               borderRadius="10px"
               bg={featured ? "whiteAlpha.200" : "accentSoft"}
-              color={featured ? "#ffffff" : "accent"}
+              color={featured ? "textOnAccent" : "accent"}
             >
               <Icon as={IconComp} boxSize={4} />
             </Box>
           )}
           <Text
             fontSize="xs"
-            color={featured ? "whiteAlpha.900" : "textSecondary"}
+            color={featured ? "textOnAccent" : "textSecondary"}
             noOfLines={1}
             fontWeight="500"
           >
@@ -126,10 +133,11 @@ export function StatCard({
             checked={Boolean(toggleChecked)}
             onChange={onToggle}
             label={toggleLabel}
+            onAccent
           />
         )}
 
-        {!featured && hasMenu && (
+        {showMenu && (
           <Menu placement="bottom-end">
             <MenuButton
               as={IconButton}
@@ -139,8 +147,12 @@ export function StatCard({
               size="xs"
               minW="28px"
               h="28px"
-              color="textMuted"
-              _hover={{ color: "textPrimary", bg: "surfaceRaised" }}
+              color={featured ? "textOnAccent" : "textMuted"}
+              opacity={featured ? 0.9 : 1}
+              _hover={{
+                color: featured ? "textOnAccent" : "textPrimary",
+                bg: featured ? "whiteAlpha.200" : "surfaceRaised",
+              }}
             />
             <MenuList
               minW="140px"
@@ -191,17 +203,6 @@ export function StatCard({
           </Menu>
         )}
 
-        {!featured && !hasMenu && (
-          <IconButton
-            aria-label={`More options for ${label}`}
-            icon={<MoreHorizontal size={16} />}
-            variant="ghost"
-            size="xs"
-            minW="28px"
-            h="28px"
-            color="textMuted"
-          />
-        )}
       </HStack>
 
       <Text
@@ -210,8 +211,8 @@ export function StatCard({
         lineHeight="1"
         fontWeight="600"
         letterSpacing="-0.04em"
-        fontVariantNumeric="tabular-nums"
-        color={featured ? "#ffffff" : "textPrimary"}
+        sx={{ fontVariantNumeric: "tabular-nums" }}
+        color={featured ? "textOnAccent" : "textPrimary"}
       >
         {empty ? "—" : value}
       </Text>
@@ -221,18 +222,24 @@ export function StatCard({
           No data in this range
         </Text>
       ) : (
-        trend !== undefined && (
+        hasMeta && (
           <HStack mt={3} spacing={2}>
-            <Badge variant={trend >= 0 ? "success" : "danger"}>
-              <Icon as={trend >= 0 ? ArrowUpRight : ArrowDownRight} boxSize={3} />
-              {Math.abs(trend)}%
-            </Badge>
+            {trend !== undefined && (
+              <Badge variant={trendIsPositive ? "success" : "danger"}>
+                <Icon
+                  as={trend >= 0 ? ArrowUpRight : ArrowDownRight}
+                  boxSize={3}
+                />
+                {Math.abs(trend)}%
+              </Badge>
+            )}
             <Text
               fontSize="11px"
-              color={featured ? "whiteAlpha.800" : "textMuted"}
+              color={featured ? "textOnAccent" : "textMuted"}
+              opacity={featured ? 0.82 : 1}
               noOfLines={1}
             >
-              {comparison}
+              {trend !== undefined ? comparison : caption}
             </Text>
             {attention && (
               <Box

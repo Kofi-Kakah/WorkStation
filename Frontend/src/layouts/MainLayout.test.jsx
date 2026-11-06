@@ -71,7 +71,7 @@ describe("MainLayout responsive shell", () => {
     expect(
       screen.getByRole("navigation", { name: "Workspace navigation" }),
     ).toBeInTheDocument();
-    expect(await screen.findByText("People")).toBeVisible();
+    expect(await screen.findByText("Nothing selected yet")).toBeVisible();
     expect(screen.getByText("Content area")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Collapse sidebar" }),
@@ -79,6 +79,34 @@ describe("MainLayout responsive shell", () => {
     expect(
       await screen.findByRole("button", { name: /Notifications, 3 unread/ }),
     ).toBeVisible();
+    expect(await screen.findByTestId("notification-dot")).toBeVisible();
+  });
+
+  it("marks the active route and navigates from the breadcrumb parent", async () => {
+    setViewport(1440);
+    renderLayout("/projects");
+
+    expect(screen.getByRole("button", { name: "Projects" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Workspace" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("path")).toHaveTextContent("/dashboard");
+    });
+  });
+
+  it("collapses navigation sections", () => {
+    setViewport(1440);
+    renderLayout();
+
+    fireEvent.click(screen.getByRole("button", { name: "Insights" }));
+
+    expect(
+      screen.queryByRole("button", { name: "Projects" }),
+    ).not.toBeInTheDocument();
   });
 
   it("collapses and restores the desktop sidebar", async () => {
@@ -90,14 +118,14 @@ describe("MainLayout responsive shell", () => {
     expect(
       screen.getByRole("button", { name: "Expand sidebar" }),
     ).toBeVisible();
-    expect(screen.queryByText("Account")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tools")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
 
     expect(
       screen.getByRole("button", { name: "Collapse sidebar" }),
     ).toBeVisible();
-    expect(screen.getByText("Account")).toBeVisible();
+    expect(screen.getByText("Tools")).toBeVisible();
   });
 
   it("uses a navigation drawer and closes it after navigating on mobile", async () => {
@@ -131,13 +159,17 @@ describe("MainLayout responsive shell", () => {
     setViewport(375);
     renderLayout();
 
-    expect(screen.queryByText("People")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nothing selected yet")).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Toggle workspace context" }),
     );
 
-    expect(await screen.findByText("People")).toBeVisible();
-    expect(screen.getByText("Activity")).toBeVisible();
+    expect(await screen.findByText("Nothing selected yet")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Select an issue, card, or conversation to see its details here.",
+      ),
+    ).toBeVisible();
   });
 });

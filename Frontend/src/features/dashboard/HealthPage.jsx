@@ -45,7 +45,7 @@ export default function HealthPage() {
         Live check of the Express backend via the Vite dev proxy.
       </p>
 
-      <div className="glass-surface p-5 sm:p-6">
+      <div className="ui-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <span
             aria-hidden="true"

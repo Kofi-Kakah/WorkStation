@@ -1,11 +1,11 @@
 import { Badge as ChakraBadge } from "@chakra-ui/react";
 
-const VARIANTS = new Set(["neutral", "accent", "success", "danger"]);
+const VARIANTS = new Set(["neutral", "accent", "success", "danger", "warning"]);
 
 /**
  * Compact status and metadata badge.
  *
- * @param {{ variant?: 'neutral'|'accent'|'success'|'danger', className?: string }} props
+ * @param {{ variant?: 'neutral'|'accent'|'success'|'danger'|'warning', className?: string }} props
  */
 export function Badge({
   variant = "neutral",

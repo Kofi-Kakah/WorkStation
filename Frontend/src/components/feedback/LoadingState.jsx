@@ -21,7 +21,7 @@ export function LoadingState({
       className={className}
       {...props}
     >
-      <Spinner size={size} color="amethyst.500" thickness="3px" />
+      <Spinner size={size} color="accent" thickness="3px" />
       {label && (
         <Text mt={3} color="textSecondary" fontSize="sm">
           {label}

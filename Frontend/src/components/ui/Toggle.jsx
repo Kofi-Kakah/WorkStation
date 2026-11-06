@@ -1,9 +1,15 @@
 /**
  * Small accessible switch primitive.
  *
- * @param {{ checked: boolean, onChange: (checked: boolean) => void, label: string, disabled?: boolean }} props
+ * @param {{ checked: boolean, onChange: (checked: boolean) => void, label: string, disabled?: boolean, onAccent?: boolean }} props
  */
-export function Toggle({ checked, onChange, label, disabled = false }) {
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  disabled = false,
+  onAccent = false,
+}) {
   return (
     <button
       type="button"
@@ -11,7 +17,7 @@ export function Toggle({ checked, onChange, label, disabled = false }) {
       aria-checked={checked}
       aria-label={label}
       disabled={disabled}
-      className="ui-toggle"
+      className={`ui-toggle${onAccent ? " ui-toggle--on-accent" : ""}`}
       data-checked={checked ? "true" : "false"}
       onClick={() => onChange(!checked)}
     >

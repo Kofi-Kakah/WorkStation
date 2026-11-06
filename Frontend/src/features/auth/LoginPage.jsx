@@ -8,8 +8,8 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { auth as firebaseAuth } from "../../lib/firebase.js";
 import { api } from "../../services/apiClient.js";
 import { useAuth } from "../../contexts/useAuth.jsx";
-import PrimaryButton from "../../components/ui/PrimaryButton.jsx";
-import GlassCard from "../../components/ui/GlassCard.jsx";
+import { Button } from "../../components/ui/Button.jsx";
+import { AuthLayout } from "../../layouts/AuthLayout.jsx";
 
 const AUTH_ERRORS = {
   "auth/invalid-credential": "The email or password you entered is incorrect.",
@@ -104,12 +104,8 @@ export function LoginPage() {
   };
 
   return (
-    <div
-      role="main"
-      className="auth-page flex min-h-screen min-h-[100svh] items-center justify-center overflow-x-hidden px-4 py-8 text-primary sm:px-6"
-    >
-      <GlassCard className="w-full max-w-md p-6 sm:p-8">
-        <header className="mb-7 text-center">
+    <AuthLayout>
+      <header className="mb-7 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-primary">
             {resetMode ? "Reset your password" : "Sign in to your workspace"}
           </h1>
@@ -227,7 +223,7 @@ export function LoginPage() {
               </p>
             )}
 
-            <PrimaryButton
+            <Button
               type="submit"
               isLoading={loading}
               isDisabled={loading}
@@ -238,7 +234,7 @@ export function LoginPage() {
               className="h-12 w-full rounded-control"
             >
               {resetMode ? "Send reset link" : "Sign in"}
-            </PrimaryButton>
+            </Button>
 
             {resetMode && (
               <button
@@ -263,8 +259,7 @@ export function LoginPage() {
             </Link>
           </p>
         )}
-      </GlassCard>
-    </div>
+    </AuthLayout>
   );
 }
 
