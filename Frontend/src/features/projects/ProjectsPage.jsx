@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   AlertIcon,
@@ -17,13 +17,14 @@ import {
 } from "@chakra-ui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderKanban, Plus, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button.jsx";
 import Card from "../../components/ui/Card.jsx";
 import { useAuth } from "../../contexts/useAuth.jsx";
 import { api } from "../../services/apiClient.js";
 
 function canCreateProject(role) {
+  if (!role) return true; // let backend enforce if role unknown
   return ["owner", "admin", "project_manager"].includes(role);
 }
 
@@ -31,6 +32,7 @@ export default function ProjectsPage() {
   const { activeWorkspace } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -39,6 +41,13 @@ export default function ProjectsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const canCreate = canCreateProject(activeWorkspace?.memberRole);
+
+  useEffect(() => {
+    if (location.state?.create && canCreate) {
+      setDialogOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, canCreate, navigate, location.pathname]);
 
   const {
     data: projects = [],
@@ -56,16 +65,24 @@ export default function ProjectsPage() {
   });
 
   const createProject = async (event) => {
-    event.preventDefault();
-    if (!activeWorkspace) return;
+    event?.preventDefault?.();
+    if (saving) return;
+    if (!activeWorkspace?.id) {
+      setError("Select a workspace before creating a project.");
+      return;
+    }
+    if (name.trim().length < 2) {
+      setError("Project name must be at least 2 characters.");
+      return;
+    }
     setSaving(true);
     setError("");
     setNotice("");
     try {
       const response = await api.post("/projects", {
         workspaceId: activeWorkspace.id,
-        name,
-        description,
+        name: name.trim(),
+        description: description.trim(),
         visibility,
       });
       await queryClient.invalidateQueries({
@@ -78,7 +95,7 @@ export default function ProjectsPage() {
       setNotice("Project created.");
       navigate(`/projects/${response.project.id}`);
     } catch (requestError) {
-      setError(requestError.message || "Unable to create the project.");
+      setError(requestError?.message || "Unable to create the project.");
     } finally {
       setSaving(false);
     }
@@ -325,7 +342,9 @@ export default function ProjectsPage() {
                     type="submit"
                     variant="primary"
                     isLoading={saving}
-                    isDisabled={name.trim().length < 2}
+                    loadingText="Creating..."
+                    onClick={createProject}
+                    isDisabled={saving || name.trim().length < 2}
                   >
                     Create project
                   </Button>

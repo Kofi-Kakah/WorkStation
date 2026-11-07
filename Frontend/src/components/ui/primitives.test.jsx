@@ -214,11 +214,9 @@ describe("Emberline UI Primitives (Step 2.0)", () => {
     fireEvent.pointerDown(dropdownBtn, { pointerType: "mouse", button: 0 });
     fireEvent.click(dropdownBtn);
 
-<<<<<<< Updated upstream
     const item = await screen.findByRole("menuitem", { name: "North America" });
-=======
+
     const item = screen.getByText("North America");
->>>>>>> Stashed changes
     expect(item).toBeInTheDocument();
     fireEvent.click(item);
     expect(handleSelect).toHaveBeenCalledTimes(1);

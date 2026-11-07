@@ -12,6 +12,7 @@ import {
   Bell,
   ChevronRight,
   Command,
+  LogOut,
   Menu,
   PanelRight,
   Search,
@@ -47,7 +48,7 @@ const PAGE_TITLES = [
 export function Topbar({ className = "", onMenu, onToggleContext }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, user } = useAuth();
+  const { profile, user, logout } = useAuth();
   const unreadNotificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
     enabled: Boolean(user?.uid),
@@ -72,6 +73,15 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
     : "Overview";
   const pageTitle =
     location.pathname === "/" ? "Overview" : matchedTitle || fallbackTitle;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
 
   return (
     <Box
@@ -247,6 +257,16 @@ export function Topbar({ className = "", onMenu, onToggleContext }) {
             status="online"
           />
         </Box>
+
+        <Tooltip label="Log out">
+          <IconButton
+            aria-label="Log out"
+            icon={<LogOut size={16} strokeWidth={1.5} />}
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+          />
+        </Tooltip>
       </HStack>
     </Box>
   );

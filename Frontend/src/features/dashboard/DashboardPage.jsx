@@ -834,7 +834,10 @@ export function DashboardPage() {
             <Settings2 size={14} strokeWidth={1.5} aria-hidden="true" />
             Customize
           </Button>
-          <Button variant="primary" onClick={() => navigate("/projects")}>
+          <Button
+            variant="primary"
+            onClick={() => navigate("/projects", { state: { create: true } })}
+          >
             <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
             Create project
           </Button>
@@ -925,7 +928,7 @@ export function DashboardPage() {
               {showProjects && (
                 <ProjectList
                   projects={projects}
-                  onCreateProject={() => navigate("/projects")}
+                  onCreateProject={() => navigate("/projects", { state: { create: true } })}
                   onOpenProject={(projectId) =>
                     navigate(`/projects/${projectId}`)
                   }
