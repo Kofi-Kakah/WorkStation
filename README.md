@@ -218,7 +218,7 @@ WorkStation/
 1. Clone the repository and install dependencies:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Kofi-Kakah/WorkStation.git
 cd WorkStation
 npm --prefix Backend install
 npm --prefix Frontend install
